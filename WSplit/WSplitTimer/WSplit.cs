@@ -2967,6 +2967,36 @@ namespace WSplitTimer
                 this.wsplit = wsplit;
             }
 
+            // Set the image's opacity.
+            private Bitmap SetOpacity(Bitmap input_bm, float opacity)
+            {
+                // Make the new bitmap.
+                Bitmap output_bm = new Bitmap(
+                    input_bm.Width, input_bm.Height);
+
+                // Make an associated Graphics object.
+                using (Graphics gr = Graphics.FromImage(output_bm))
+                {
+                    // Make a ColorMatrix with the opacity.
+                    ColorMatrix color_matrix = new ColorMatrix();
+                    color_matrix.Matrix33 = opacity;
+
+                    // Make the ImageAttributes object.
+                    ImageAttributes attributes = new ImageAttributes();
+                    attributes.SetColorMatrix(color_matrix,
+                        ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+                    // Draw the input bitmap onto the Graphics object.
+                    Rectangle rect = new Rectangle(0, 0,
+                        output_bm.Width, output_bm.Height);
+
+                    gr.DrawImage(input_bm, rect,
+                        0, 0, input_bm.Width, input_bm.Height,
+                        GraphicsUnit.Pixel, attributes);
+                }
+                return output_bm;
+            }
+
             public void PrepareBackground()
             {
                 this.bgImage = null;
@@ -2983,7 +3013,7 @@ namespace WSplitTimer
                     {
                         using (Bitmap bmp = new Bitmap(Settings.Profile.BackgroundImageFilename))
                         {
-                            this.bgImage = bmp.Clone(Settings.Profile.BackgroundImageSelection, bmp.PixelFormat);
+                            this.bgImage = SetOpacity(bmp.Clone(Settings.Profile.BackgroundImageSelection, bmp.PixelFormat), Settings.Profile.BackgroundOpacity / 100f);
                         }
 
                         if (this.bgImage.FrameDimensionsList.Any(fd => fd.Equals(FrameDimension.Time.Guid))
@@ -3505,6 +3535,12 @@ namespace WSplitTimer
                     //
                     if ((wsplit.currentDispMode == DisplayMode.Wide) || (wsplit.currentDispMode == DisplayMode.Detailed))
                     {
+
+                        if (Settings.Profile.BackgroundImage)
+                        {
+                            bgGraphics.DrawImage(bgImage, 0, 0, wsplit.Width, wsplit.Height);
+                        }
+
                         Rectangle rectangle8;   // Yet another unnamed rectangle
                         int num16 = wsplit.clockRect.Right + 2;
                         int y = 0;
