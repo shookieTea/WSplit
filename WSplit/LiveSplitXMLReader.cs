@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Xml;
-using System.Windows.Forms;
-using System.Collections;
 
 public class LiveSplitXMLReader
 {
-    private const String GAME_NAME = "GameName";
-    private const String CATEGORY_NAME = "CategoryName";
-    private const String OFFSET = "Offset";
-    private const String ATTEMPTS_COUNT = "AttemptCount";
-    private const String SEGMENTS = "Segments";
-    private const String SEGMENT_NAME = "Name";
-    private const String SPLIT_TIMES = "SplitTimes";
-    private const String BEST_SEGMENT = "BestSegmentTime";
+    private const string GAME_NAME = "GameName";
+    private const string CATEGORY_NAME = "CategoryName";
+    private const string OFFSET = "Offset";
+    private const string ATTEMPTS_COUNT = "AttemptCount";
+    private const string SEGMENTS = "Segments";
+    private const string SEGMENT_NAME = "Name";
+    private const string SPLIT_TIMES = "SplitTimes";
+    private const string BEST_SEGMENT = "BestSegmentTime";
 
-    private Split split;
-    private XmlDocument xmlDocument;
+    private readonly RunSplits split;
+    private readonly XmlDocument xmlDocument;
 
     public LiveSplitXMLReader()
     {
-        this.split = new Split();
+        split = new RunSplits();
         xmlDocument = new XmlDocument();
     }
 
@@ -31,19 +28,19 @@ public class LiveSplitXMLReader
     /// </summary>
     /// <param name="file">The filename of the LiveSplit XML file.</param>
     /// <returns>The split with all its information.</returns>
-    public Split ReadSplit(String file)
+    public RunSplits ReadSplit(string file)
     {
         xmlDocument.Load(file);
         StringBuilder stringBuilder = new StringBuilder();
-        String runTitle = "";
-        String attemptsCountString = "";
-        String startDelay = "";
+        string runTitle = "";
+        string attemptsCountString = "";
+        string startDelay = "";
         int attemptsCount = 0;
         XmlNodeList rootNode;
-        List<Segment> segments = new List<Segment>();
+        List<SplitSegment> segments = new List<SplitSegment>();
 
         rootNode = xmlDocument.DocumentElement.SelectNodes("/Run");
-        foreach(XmlNode runNode in rootNode)
+        foreach (XmlNode runNode in rootNode)
         {
             foreach (XmlNode infoNode in runNode.ChildNodes)
             {
@@ -67,16 +64,16 @@ public class LiveSplitXMLReader
                 {
                     PopulateSegments(segments, infoNode);
                 }
-            }  
+            }
         }
 
         runTitle = stringBuilder.ToString();
-        this.split.RunTitle = runTitle;
-        this.split.StartDelay = SetRunDelay(startDelay);
-        Int32.TryParse(attemptsCountString, out attemptsCount);
-        this.split.AttemptsCount = attemptsCount;
-        this.split.segments = segments;
-        return this.split;
+        split.RunTitle = runTitle;
+        split.StartDelay = SetRunDelay(startDelay);
+        int.TryParse(attemptsCountString, out attemptsCount);
+        split.AttemptsCount = attemptsCount;
+        split.segments = segments;
+        return split;
     }
 
     /// <summary>
@@ -86,9 +83,9 @@ public class LiveSplitXMLReader
     /// </summary>
     /// <param name="delayString">The initial delay string from the file.</param>
     /// <returns>The delay into the form of a int.</returns>
-    private int SetRunDelay(String delayString)
+    private int SetRunDelay(string delayString)
     {
-        String delayStringModified = "";
+        string delayStringModified = "";
         int delay = 0;
 
         if (delayString.IndexOf('-') != -1)
@@ -105,32 +102,32 @@ public class LiveSplitXMLReader
     /// </summary>
     /// <param name="delayString">The delay into the form of a String.</param>
     /// <returns>The delay into the form of a int.</returns>
-    private int ParseDelayString(String delayString)
+    private int ParseDelayString(string delayString)
     {
         int delay = 0;
         int delayTimeSection = 0;
-        String[] timeSection = delayString.Split(':');
-        String[] secondsAndMilliseconds = timeSection[timeSection.Length - 1].Split('.');
+        string[] timeSection = delayString.Split(':');
+        string[] secondsAndMilliseconds = timeSection[timeSection.Length - 1].Split('.');
         //Millseconds
         if (secondsAndMilliseconds.Length == 2)
         {
-            if (Int32.TryParse(secondsAndMilliseconds[1].Substring(0, 2), out delayTimeSection))
+            if (int.TryParse(secondsAndMilliseconds[1].Substring(0, 2), out delayTimeSection))
             {
                 delay += (delayTimeSection * 10);
             }
         }
         //Seconds
-        if (Int32.TryParse(secondsAndMilliseconds[0], out delayTimeSection))
+        if (int.TryParse(secondsAndMilliseconds[0], out delayTimeSection))
         {
             delay += (delayTimeSection * 1000);
         }
         //Minutes
-        if (Int32.TryParse(timeSection[1], out delayTimeSection))
+        if (int.TryParse(timeSection[1], out delayTimeSection))
         {
             delay += (delayTimeSection * 60 * 1000);
         }
         //Hours
-        if (Int32.TryParse(timeSection[0], out delayTimeSection))
+        if (int.TryParse(timeSection[0], out delayTimeSection))
         {
             delay += (delayTimeSection * 3600 * 1000);
         }
@@ -142,14 +139,14 @@ public class LiveSplitXMLReader
     /// </summary>
     /// <param name="segments">The array list of segments.</param>
     /// <param name="segmentsNode">The node containing the segments in the xml file.</param>
-    private void PopulateSegments(List<Segment> segments, XmlNode segmentsNode)
+    private void PopulateSegments(List<SplitSegment> segments, XmlNode segmentsNode)
     {
-        Segment newSegment;
-        String segmentName = "";
+        SplitSegment newSegment;
+        string segmentName = "";
         double segmentBestTime = 0.0;
         double segmentBestSegment = 0.0;
         XmlNode nodeSegmentTime;
-        foreach(XmlNode segmentNode in segmentsNode.ChildNodes)
+        foreach (XmlNode segmentNode in segmentsNode.ChildNodes)
         {
             foreach (XmlNode segmentInfoNode in segmentNode.ChildNodes)
             {
@@ -160,17 +157,28 @@ public class LiveSplitXMLReader
                 else if (segmentInfoNode.Name == SPLIT_TIMES)
                 {
                     nodeSegmentTime = segmentInfoNode.FirstChild.FirstChild;
-                    segmentBestTime = WSplitUtil.timeParse(nodeSegmentTime.InnerText);
+                    segmentBestTime = TimeParse(nodeSegmentTime.InnerText);
                 }
                 else if (segmentInfoNode.Name == BEST_SEGMENT)
                 {
                     nodeSegmentTime = segmentInfoNode.FirstChild;
-                    segmentBestSegment = WSplitUtil.timeParse(nodeSegmentTime.InnerText);
+                    segmentBestSegment = TimeParse(nodeSegmentTime.InnerText);
                 }
             }
-            newSegment = new Segment(segmentName, 0.0, segmentBestTime, segmentBestSegment);
+            newSegment = new SplitSegment(segmentName, 0.0, segmentBestTime, segmentBestSegment);
             segments.Add(newSegment);
         }
     }
-}
 
+    private static double TimeParse(string timeString)
+    {
+        double num = 0.0;
+        foreach (string str in timeString.Split(new char[] { ':' }))
+        {
+            double num2;
+            if (double.TryParse(str, NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""), out num2))
+                num = (num * 60.0) + num2;
+        }
+        return num;
+    }
+}

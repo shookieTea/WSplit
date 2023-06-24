@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Windows.Forms;
-using System.Text;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Threading;
+using System.Text;
+using System.Windows.Forms;
 
 namespace WSplitTimer
 {
     public class MessageBoxEx
     {
         private static IWin32Window _owner;
-        private static HookProc _hookProc;
+        private static readonly HookProc _hookProc;
         private static IntPtr _hHook;
 
         public static DialogResult Show(string text)
@@ -150,7 +149,7 @@ namespace WSplitTimer
             public IntPtr wParam;
             public uint message;
             public IntPtr hwnd;
-        } ;
+        };
 
         static MessageBoxEx()
         {
@@ -213,7 +212,6 @@ namespace WSplitTimer
             Point ptCenter = new Point(0, 0);
             ptCenter.X = recParent.X + ((recParent.Width - recParent.X) / 2);
             ptCenter.Y = recParent.Y + ((recParent.Height - recParent.Y) / 2);
-
 
             Point ptStart = new Point(0, 0);
             ptStart.X = (ptCenter.X - (width / 2));

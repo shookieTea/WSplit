@@ -8,9 +8,8 @@
 [assembly: System.Runtime.InteropServices.ComVisible(false)]
 [assembly: System.Diagnostics.Debuggable(System.Diagnostics.DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints)]
 [assembly: System.Runtime.CompilerServices.CompilationRelaxations(8)]
-[assembly: System.Runtime.CompilerServices.RuntimeCompatibility(WrapNonExceptionThrows=true)]
+[assembly: System.Runtime.CompilerServices.RuntimeCompatibility(WrapNonExceptionThrows = true)]
 [assembly: System.Reflection.AssemblyTitle("WSplit")]
 [assembly: System.Reflection.AssemblyDescription("")]
 [assembly: System.Reflection.AssemblyConfiguration("")]
 [assembly: System.Reflection.AssemblyCompany("")]
-

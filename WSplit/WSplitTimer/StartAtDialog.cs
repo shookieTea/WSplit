@@ -1,12 +1,6 @@
 ﻿namespace WSplitTimer
 {
     using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Data;
-    using System.Drawing;
-    using System.Linq;
-    using System.Text;
     using System.Text.RegularExpressions;
     using System.Windows.Forms;
 
@@ -43,9 +37,9 @@
 
         private void textBoxOffset_TextChanged(object sender, EventArgs e)
         {
-            if (Regex.IsMatch(this.textBoxOffset.Text, "[^0-9:.,]"))
+            if (Regex.IsMatch(textBoxOffset.Text, "[^0-9:.,]"))
             {
-                this.textBoxOffset.Text = Regex.Replace(this.textBoxOffset.Text, "[^0-9:.,]", "");
+                textBoxOffset.Text = Regex.Replace(textBoxOffset.Text, "[^0-9:.,]", "");
             }
         }
     }

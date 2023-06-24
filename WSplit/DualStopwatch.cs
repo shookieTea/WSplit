@@ -8,7 +8,7 @@ public class DualStopwatch
     private TimeSpan pauseTime = TimeSpan.Zero;
     private long startTicks;
     private DateTime startTime;
-    private Stopwatch systimer = new Stopwatch();
+    private readonly Stopwatch systimer = new Stopwatch();
     public bool useFallback;
 
     // Used for when the timer starts at a time greater than 0 ticks
@@ -16,52 +16,52 @@ public class DualStopwatch
 
     public DualStopwatch(bool useFallbackMethod)
     {
-        this.useFallback = useFallbackMethod;
+        useFallback = useFallbackMethod;
     }
 
     public void Reset()
     {
-        this.systimer.Reset();
-        this.pauseTime = TimeSpan.Zero;
-        this.pauseTicks = 0L;
-        this.startedAt = TimeSpan.Zero;
-        this.fallbackIsRunning = false;
+        systimer.Reset();
+        pauseTime = TimeSpan.Zero;
+        pauseTicks = 0L;
+        startedAt = TimeSpan.Zero;
+        fallbackIsRunning = false;
     }
 
     public void StartAt(TimeSpan offset)
     {
         // If the timer wasn't already running and it was not paused, apply the offset
-        if (!this.systimer.IsRunning && !this.fallbackIsRunning && this.pauseTime.Ticks >= 0L)
+        if (!systimer.IsRunning && !fallbackIsRunning && pauseTime.Ticks >= 0L)
             startedAt = offset;
         Start();
     }
 
     public void Start()
     {
-        this.systimer.Start();
-        if (!this.fallbackIsRunning && this.pauseTime.Ticks > 0L)
+        systimer.Start();
+        if (!fallbackIsRunning && pauseTime.Ticks > 0L)
         {
-            this.startTime = DateTime.UtcNow - this.pauseTime;
-            this.pauseTime = TimeSpan.Zero;
-            this.startTicks = Environment.TickCount - this.pauseTicks;
-            this.pauseTicks = 0L;
+            startTime = DateTime.UtcNow - pauseTime;
+            pauseTime = TimeSpan.Zero;
+            startTicks = Environment.TickCount - pauseTicks;
+            pauseTicks = 0L;
         }
         else
         {
-            this.startTime = DateTime.UtcNow;
-            this.startTicks = Environment.TickCount;
+            startTime = DateTime.UtcNow;
+            startTicks = Environment.TickCount;
         }
-        this.fallbackIsRunning = true;
+        fallbackIsRunning = true;
     }
 
     public void Stop()
     {
-        this.systimer.Stop();
-        if (this.fallbackIsRunning)
+        systimer.Stop();
+        if (fallbackIsRunning)
         {
-            this.pauseTime = (TimeSpan) (DateTime.UtcNow - this.startTime);
-            this.pauseTicks = Environment.TickCount - this.startTicks;
-            this.fallbackIsRunning = false;
+            pauseTime = (TimeSpan)(DateTime.UtcNow - startTime);
+            pauseTicks = Environment.TickCount - startTicks;
+            fallbackIsRunning = false;
         }
     }
 
@@ -69,7 +69,7 @@ public class DualStopwatch
     {
         get
         {
-            return (this.fallbackElapsed.TotalMilliseconds - this.systimer.Elapsed.TotalMilliseconds);
+            return (fallbackElapsed.TotalMilliseconds - systimer.Elapsed.TotalMilliseconds);
         }
     }
 
@@ -77,11 +77,11 @@ public class DualStopwatch
     {
         get
         {
-            if (this.useFallback)
+            if (useFallback)
             {
-                return this.fallbackElapsed + startedAt;
+                return fallbackElapsed + startedAt;
             }
-            return this.systimer.Elapsed + startedAt;
+            return systimer.Elapsed + startedAt;
         }
     }
 
@@ -89,12 +89,12 @@ public class DualStopwatch
     {
         get
         {
-            if (this.useFallback)
+            if (useFallback)
             {
-                return (long)Math.Truncate(this.fallbackElapsed.TotalMilliseconds + startedAt.TotalMilliseconds);
+                return (long)Math.Truncate(fallbackElapsed.TotalMilliseconds + startedAt.TotalMilliseconds);
                 //return (long) Math.Round(this.fallbackElapsed.TotalMilliseconds + startedAt.TotalMilliseconds);
             }
-            return (long)Math.Truncate(this.systimer.ElapsedMilliseconds + startedAt.TotalMilliseconds);
+            return (long)Math.Truncate(systimer.ElapsedMilliseconds + startedAt.TotalMilliseconds);
             //return (long) Math.Round(this.systimer.ElapsedMilliseconds + startedAt.TotalMilliseconds);
         }
     }
@@ -103,7 +103,7 @@ public class DualStopwatch
     {
         get
         {
-            return this.Elapsed.Ticks;
+            return Elapsed.Ticks;
         }
     }
 
@@ -111,18 +111,18 @@ public class DualStopwatch
     {
         get
         {
-            if (!this.fallbackIsRunning)
+            if (!fallbackIsRunning)
             {
-                return this.pauseTime;
+                return pauseTime;
             }
-            TimeSpan span = (TimeSpan) (DateTime.UtcNow - this.startTime);
-            TimeSpan span2 = TimeSpan.FromMilliseconds(Environment.TickCount - this.startTicks);
+            TimeSpan span = (TimeSpan)(DateTime.UtcNow - startTime);
+            TimeSpan span2 = TimeSpan.FromMilliseconds(Environment.TickCount - startTicks);
             if (span2 < TimeSpan.Zero)
             {
                 span2 += TimeSpan.FromMilliseconds(4294967295);
             }
-            double num = Math.Abs((double) (span.TotalMilliseconds - span2.TotalMilliseconds));
-            if ((num > 500.0) && (Math.Abs((double) (num / span.TotalMilliseconds)) > 0.00013888888888888889))
+            double num = Math.Abs((double)(span.TotalMilliseconds - span2.TotalMilliseconds));
+            if ((num > 500.0) && (Math.Abs((double)(num / span.TotalMilliseconds)) > 0.00013888888888888889))
             {
                 return span2;
             }
@@ -134,12 +134,11 @@ public class DualStopwatch
     {
         get
         {
-            if (this.useFallback)
+            if (useFallback)
             {
-                return this.fallbackIsRunning;
+                return fallbackIsRunning;
             }
-            return this.systimer.IsRunning;
+            return systimer.IsRunning;
         }
     }
 }
-

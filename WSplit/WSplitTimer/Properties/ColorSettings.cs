@@ -1,6 +1,5 @@
 ﻿namespace WSplitTimer.Properties
 {
-    using System;
     using System.CodeDom.Compiler;
     using System.Configuration;
     using System.Diagnostics;
@@ -605,87 +604,87 @@
 
         public Color UsedDViewAheadLosing
         {
-            get { return (DViewUsePrimary) ? AheadLosingFore : DViewAheadLosing ; }
+            get { return (DViewUsePrimary) ? AheadLosingFore : DViewAheadLosing; }
         }
 
         public Color UsedDViewBehind
         {
-            get { return (DViewUsePrimary) ? BehindFore : DViewBehind ; }
+            get { return (DViewUsePrimary) ? BehindFore : DViewBehind; }
         }
 
         public Color UsedDViewBehindLosing
         {
-            get { return (DViewUsePrimary) ? BehindLosingFore : DViewBehindLosing ; }
+            get { return (DViewUsePrimary) ? BehindLosingFore : DViewBehindLosing; }
         }
 
         public Color UsedDViewDelay
         {
-            get { return (DViewUsePrimary) ? DelayFore : DViewDelay ; }
+            get { return (DViewUsePrimary) ? DelayFore : DViewDelay; }
         }
 
         public Color UsedDViewFinished
         {
-            get { return (DViewUsePrimary) ? FinishedFore : DViewFinished ; }
+            get { return (DViewUsePrimary) ? FinishedFore : DViewFinished; }
         }
 
         public Color UsedDViewFlash
         {
-            get { return (DViewUsePrimary) ? Flash : DViewFlash ; }
+            get { return (DViewUsePrimary) ? Flash : DViewFlash; }
         }
 
         public Color UsedDViewPaused
         {
-            get { return (DViewUsePrimary) ? Paused : DViewPaused ; }
+            get { return (DViewUsePrimary) ? Paused : DViewPaused; }
         }
 
         public Color UsedDViewRecord
         {
-            get { return (DViewUsePrimary) ? RecordFore : DViewRecord ; }
+            get { return (DViewUsePrimary) ? RecordFore : DViewRecord; }
         }
 
         public Color UsedDViewSegAheadGain
         {
-            get { return (DViewUsePrimary) ? SegAheadGain : DViewSegAheadGain ; }
+            get { return (DViewUsePrimary) ? SegAheadGain : DViewSegAheadGain; }
         }
 
         public Color UsedDViewSegAheadLoss
         {
-            get { return (DViewUsePrimary) ? SegAheadLoss : DViewSegAheadLoss ; }
+            get { return (DViewUsePrimary) ? SegAheadLoss : DViewSegAheadLoss; }
         }
 
         public Color UsedDViewSegBehindGain
         {
-            get { return (DViewUsePrimary) ? SegBehindGain : DViewSegBehindGain ; }
+            get { return (DViewUsePrimary) ? SegBehindGain : DViewSegBehindGain; }
         }
 
         public Color UsedDViewSegBehindLoss
         {
-            get { return (DViewUsePrimary) ? SegBehindLoss : DViewSegBehindLoss ; }
+            get { return (DViewUsePrimary) ? SegBehindLoss : DViewSegBehindLoss; }
         }
 
         public Color UsedDViewSegBestSegment
         {
-            get { return (DViewUsePrimary) ? SegBestSegment : DViewSegBestSegment ; }
+            get { return (DViewUsePrimary) ? SegBestSegment : DViewSegBestSegment; }
         }
 
         public Color UsedDViewSegCurrentText
         {
-            get { return (DViewUsePrimary) ? LiveSeg : DViewSegCurrentText ; }
+            get { return (DViewUsePrimary) ? LiveSeg : DViewSegCurrentText; }
         }
 
         public Color UsedDViewSegDefaultText
         {
-            get { return (DViewUsePrimary) ? FutureSegName : DViewSegDefaultText ; }
+            get { return (DViewUsePrimary) ? FutureSegName : DViewSegDefaultText; }
         }
 
         public Color UsedDViewSegHighlight
         {
-            get { return (DViewUsePrimary) ? SegHighlightBorder : DViewSegHighlight ; }
+            get { return (DViewUsePrimary) ? SegHighlightBorder : DViewSegHighlight; }
         }
+
         public Color UsedDViewSegMissingTime
         {
-            get { return (DViewUsePrimary) ? SegMissingTime : DViewSegMissingTime ; }
+            get { return (DViewUsePrimary) ? SegMissingTime : DViewSegMissingTime; }
         }
     }
 }
-

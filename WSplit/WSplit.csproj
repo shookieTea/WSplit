@@ -8,7 +8,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <AssemblyName>WSplit</AssemblyName>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <PublishUrl>publier\</PublishUrl>
@@ -111,14 +111,13 @@
     <Compile Include="WSplitTimer\StartAtDialog.Designer.cs">
       <DependentUpon>StartAtDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="WSplitUtil.cs" />
     <Compile Include="LiveSplitXMLReader.cs" />
     <Compile Include="_IMAGE_FILE_HEADER.cs" />
     <Compile Include="WSplitTimer\WSplit.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Segment.cs" />
-    <Compile Include="Split.cs" />
+    <Compile Include="SplitSegment.cs" />
+    <Compile Include="RunSplits.cs" />
     <Compile Include="DualStopwatch.cs" />
     <Compile Include="WSplitTimer\Program.cs" />
     <Compile Include="WSplitTimer\ColorPicker.cs">

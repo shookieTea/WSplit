@@ -11,66 +11,66 @@ namespace WSplitTimer
     {
         private WSplit wsplit;
 
-        Bitmap image;
-        RectangleF imageDisplayRectangle;
-        Timer animationTimer;
-        int currentFrame;
+        private Bitmap image;
+        private RectangleF imageDisplayRectangle;
+        private Timer animationTimer;
+        private int currentFrame;
 
-        Rectangle selectionRectangle;
-        RectangleF selectionDisplayRectangle;
+        private Rectangle selectionRectangle;
+        private RectangleF selectionDisplayRectangle;
 
-        float scale;
+        private float scale;
 
-        bool imageLoaded = false;
-        String imageFilename = "";
-
-        Brush grayScreen = new SolidBrush(Color.FromArgb(128, Color.LightGray));
+        private bool imageLoaded = false;
+        private string imageFilename = "";
+        private readonly Brush grayScreen = new SolidBrush(Color.FromArgb(128, Color.LightGray));
 
         // Members related to the PictureBox events management
-        bool scrolling = false;
-        Point scrollingCursorStartPoint;
-        PointF scrollingImageStartPoint;
-        PointF scrollingSelectionStartPoint;
+        private bool scrolling = false;
 
-        bool moving = false;
-        Point movingCursorStartPoint;
-        Point movingUnscaledSelectionStartPoint;
+        private Point scrollingCursorStartPoint;
+        private PointF scrollingImageStartPoint;
+        private PointF scrollingSelectionStartPoint;
 
-        bool resizingLeft = false;
-        bool resizingRight = false;
-        bool resizingTop = false;
-        bool resizingBottom = false;
-        Rectangle resizingSelectionStartRect;
+        private bool moving = false;
+        private Point movingCursorStartPoint;
+        private Point movingUnscaledSelectionStartPoint;
 
-        bool overLeft = false;
-        bool overRight = false;
-        bool overTop = false;
-        bool overBottom = false;
+        private bool resizingLeft = false;
+        private bool resizingRight = false;
+        private bool resizingTop = false;
+        private bool resizingBottom = false;
+        private Rectangle resizingSelectionStartRect;
+
+        private bool overLeft = false;
+        private bool overRight = false;
+        private bool overTop = false;
+        private bool overBottom = false;
 
         public BackgroundImageDialog()
         {
             InitializeComponent();
 
             // The following prevents the mouse wheel event from having any effect on the trackbars:
-            this.trackBarZoom.MouseWheel += ((o, e) => ((HandledMouseEventArgs)e).Handled = true);
-            this.trackBarOpacity.MouseWheel += ((o, e) => ((HandledMouseEventArgs)e).Handled = true);
+            trackBarZoom.MouseWheel += ((o, e) => ((HandledMouseEventArgs)e).Handled = true);
+            trackBarOpacity.MouseWheel += ((o, e) => ((HandledMouseEventArgs)e).Handled = true);
 
-            this.picBoxImageSelectionModifier.MouseWheel += picBoxImageSelectionModifier_MouseWheel;
+            picBoxImageSelectionModifier.MouseWheel += picBoxImageSelectionModifier_MouseWheel;
         }
 
         public DialogResult ShowDialog(Form caller, WSplit wsplit)
         {
             this.wsplit = wsplit;
-            
+
             // If for some reason, a value is not compatible with WSplit, the settings
             // will automatically be brought back to default.
             try
             {
-                this.PopulateSettings();
+                PopulateSettings();
             }
             catch (Exception)   // Any kind of exception
             {
-                this.RestoreDefaults();
+                RestoreDefaults();
                 MessageBoxEx.Show(this,
                     "An error has occurred and your settings were brought back to defaults.",
                     "Defaults Restored", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -81,107 +81,107 @@ namespace WSplitTimer
 
         private void PopulateSettings()
         {
-            this.checkBoxUseImageBg.Checked = Settings.Profile.BackgroundImage;
-            this.changeUsedImage(Settings.Profile.BackgroundImageFilename, false);
-            this.selectionRectangle = Settings.Profile.BackgroundImageSelection;
-            if (this.image != null)
+            checkBoxUseImageBg.Checked = Settings.Profile.BackgroundImage;
+            changeUsedImage(Settings.Profile.BackgroundImageFilename, false);
+            selectionRectangle = Settings.Profile.BackgroundImageSelection;
+            if (image != null)
             {
-                if (this.selectionRectangle == Rectangle.Empty)
-                    this.ResetSelection();
-                this.FitZoom();
+                if (selectionRectangle == Rectangle.Empty)
+                    ResetSelection();
+                FitZoom();
             }
 
-            this.trackBarOpacity.Value = Settings.Profile.BackgroundOpacity;
+            trackBarOpacity.Value = Settings.Profile.BackgroundOpacity;
             if (Settings.Profile.BackgroundPlain)
-                this.radioButtonPlain.Checked = true;
+                radioButtonPlain.Checked = true;
             else if (Settings.Profile.BackgroundBlack)
-                this.radioButtonBlack.Checked = true;
+                radioButtonBlack.Checked = true;
             else
-                this.radioButtonDefault.Checked = true;
+                radioButtonDefault.Checked = true;
         }
 
         private void RestoreDefaults()
         {
             Settings.Profile.Reset();
             Settings.Profile.FirstRun = false;
-            this.PopulateSettings();
+            PopulateSettings();
         }
 
         public void ApplyChanges()
         {
-            Settings.Profile.BackgroundImage = this.checkBoxUseImageBg.Checked;
-            Settings.Profile.BackgroundImageFilename = this.imageFilename;
-            Settings.Profile.BackgroundImageSelection = this.selectionRectangle;
+            Settings.Profile.BackgroundImage = checkBoxUseImageBg.Checked;
+            Settings.Profile.BackgroundImageFilename = imageFilename;
+            Settings.Profile.BackgroundImageSelection = selectionRectangle;
 
-            Settings.Profile.BackgroundOpacity = this.trackBarOpacity.Value;
-            Settings.Profile.BackgroundPlain = this.radioButtonPlain.Checked;
-            Settings.Profile.BackgroundBlack = this.radioButtonBlack.Checked;
+            Settings.Profile.BackgroundOpacity = trackBarOpacity.Value;
+            Settings.Profile.BackgroundPlain = radioButtonPlain.Checked;
+            Settings.Profile.BackgroundBlack = radioButtonBlack.Checked;
         }
 
         private void changeUsedImage(string filename, bool newSelection = true)
         {
             // Image is gonna be changed.
             // The current image and values related to it are set back to default values
-            this.image = null;
-            this.imageLoaded = false;
+            image = null;
+            imageLoaded = false;
 
-            if (this.animationTimer != null)
+            if (animationTimer != null)
             {
-                this.animationTimer.Dispose();
-                this.animationTimer = null;
-                this.currentFrame = 0;
+                animationTimer.Dispose();
+                animationTimer = null;
+                currentFrame = 0;
             }
 
             if (filename == "")
             {
-                this.imageFilename = filename;
-                this.textBoxImagePath.ForeColor = SystemColors.WindowText;
-                this.textBoxImagePath.Text = "No image selected";
+                imageFilename = filename;
+                textBoxImagePath.ForeColor = SystemColors.WindowText;
+                textBoxImagePath.Text = "No image selected";
 
-                this.labelZoom.Enabled = false;
-                this.labelZoomDisplay.Enabled = false;
-                this.trackBarZoom.Enabled = false;
-                this.buttonZoomFit.Enabled = false;
-                this.buttonAutoSelect.Enabled = false;
-                this.buttonResetSelect.Enabled = false;
-                this.picBoxImageSelectionModifier.Enabled = false;
+                labelZoom.Enabled = false;
+                labelZoomDisplay.Enabled = false;
+                trackBarZoom.Enabled = false;
+                buttonZoomFit.Enabled = false;
+                buttonAutoSelect.Enabled = false;
+                buttonResetSelect.Enabled = false;
+                picBoxImageSelectionModifier.Enabled = false;
             }
             else
             {
                 try
                 {
-                    this.image = new Bitmap(filename);
-                    this.imageFilename = filename;
-                    this.textBoxImagePath.ForeColor = SystemColors.WindowText;
-                    this.textBoxImagePath.Text = filename;
+                    image = new Bitmap(filename);
+                    imageFilename = filename;
+                    textBoxImagePath.ForeColor = SystemColors.WindowText;
+                    textBoxImagePath.Text = filename;
 
                     // If it's an animated image, sets up the animation correctly.
-                    if (this.image.FrameDimensionsList.Any(fd => fd.Equals(FrameDimension.Time.Guid))
-                        && this.image.GetFrameCount(FrameDimension.Time) > 1)
+                    if (image.FrameDimensionsList.Any(fd => fd.Equals(FrameDimension.Time.Guid))
+                        && image.GetFrameCount(FrameDimension.Time) > 1)
                     {
-                        PropertyItem gifDelay = this.image.GetPropertyItem(0x5100);
+                        PropertyItem gifDelay = image.GetPropertyItem(0x5100);
 
                         animationTimer = new Timer();
                         animationTimer.Interval = BitConverter.ToInt16(gifDelay.Value, 0) * 10;
                         animationTimer.Tick += (o, e) =>
                             {
-                                ++this.currentFrame;
-                                if (this.currentFrame >= this.image.GetFrameCount(FrameDimension.Time))
-                                    this.currentFrame = 0;
+                                ++currentFrame;
+                                if (currentFrame >= image.GetFrameCount(FrameDimension.Time))
+                                    currentFrame = 0;
 
-                                this.image.SelectActiveFrame(FrameDimension.Time, currentFrame);
-                                this.picBoxImageSelectionModifier.Invalidate();
+                                image.SelectActiveFrame(FrameDimension.Time, currentFrame);
+                                picBoxImageSelectionModifier.Invalidate();
                             };
                         animationTimer.Start();
                     }
 
-                    this.labelZoom.Enabled = true;
-                    this.labelZoomDisplay.Enabled = true;
-                    this.trackBarZoom.Enabled = true;
-                    this.buttonZoomFit.Enabled = true;
-                    this.buttonAutoSelect.Enabled = true;
-                    this.buttonResetSelect.Enabled = true;
-                    this.picBoxImageSelectionModifier.Enabled = true;
+                    labelZoom.Enabled = true;
+                    labelZoomDisplay.Enabled = true;
+                    trackBarZoom.Enabled = true;
+                    buttonZoomFit.Enabled = true;
+                    buttonAutoSelect.Enabled = true;
+                    buttonResetSelect.Enabled = true;
+                    picBoxImageSelectionModifier.Enabled = true;
 
                     if (newSelection)
                     {
@@ -193,21 +193,21 @@ namespace WSplitTimer
                 }
                 catch (Exception)
                 {
-                    this.imageFilename = "";
-                    this.textBoxImagePath.ForeColor = Color.Red;
-                    this.textBoxImagePath.Text = "Cannot load image: " + filename;
+                    imageFilename = "";
+                    textBoxImagePath.ForeColor = Color.Red;
+                    textBoxImagePath.Text = "Cannot load image: " + filename;
 
-                    this.labelZoom.Enabled = false;
-                    this.labelZoomDisplay.Enabled = false;
-                    this.trackBarZoom.Enabled = false;
-                    this.buttonZoomFit.Enabled = false;
-                    this.buttonAutoSelect.Enabled = false;
-                    this.buttonResetSelect.Enabled = false;
-                    this.picBoxImageSelectionModifier.Enabled = false;
+                    labelZoom.Enabled = false;
+                    labelZoomDisplay.Enabled = false;
+                    trackBarZoom.Enabled = false;
+                    buttonZoomFit.Enabled = false;
+                    buttonAutoSelect.Enabled = false;
+                    buttonResetSelect.Enabled = false;
+                    picBoxImageSelectionModifier.Enabled = false;
                 }
             }
 
-            this.picBoxImageSelectionModifier.Invalidate();
+            picBoxImageSelectionModifier.Invalidate();
         }
 
         private void FitZoom()
@@ -217,149 +217,149 @@ namespace WSplitTimer
             // First creates a rectangle that contains both the image and the selection rectangle,
             // at 100% scale, with (0;0) being the top-left corner of the image
             Rectangle contentRectangle = new Rectangle();
-            contentRectangle.X = Math.Min(0, this.selectionRectangle.X);
-            contentRectangle.Y = Math.Min(0, this.selectionRectangle.Y);
-            contentRectangle.Width = Math.Max(this.image.Width, this.selectionRectangle.X + this.selectionRectangle.Width) - contentRectangle.X;
-            contentRectangle.Height = Math.Max(this.image.Height, this.selectionRectangle.Y + this.selectionRectangle.Height) - contentRectangle.Y;
+            contentRectangle.X = Math.Min(0, selectionRectangle.X);
+            contentRectangle.Y = Math.Min(0, selectionRectangle.Y);
+            contentRectangle.Width = Math.Max(image.Width, selectionRectangle.X + selectionRectangle.Width) - contentRectangle.X;
+            contentRectangle.Height = Math.Max(image.Height, selectionRectangle.Y + selectionRectangle.Height) - contentRectangle.Y;
 
             // Calculates the scale needed to show the whole picture. Scale is at least 5%, and at most 200%
-            this.scale = Math.Max(5, 39800 / (new int[] { contentRectangle.Width, contentRectangle.Height, 199 }).Max()) / 100f;
-            this.trackBarZoom.Value = (int)(100 * this.scale);
+            scale = Math.Max(5, 39800 / (new int[] { contentRectangle.Width, contentRectangle.Height, 199 }).Max()) / 100f;
+            trackBarZoom.Value = (int)(100 * scale);
 
             // Sets the display rectangles according to the previously calculated scale
             PointF contentDisplayPosition = new PointF(
-                (398 - contentRectangle.Width * this.scale) / 2f,
-                (398 - contentRectangle.Height * this.scale) / 2f);
+                (398 - contentRectangle.Width * scale) / 2f,
+                (398 - contentRectangle.Height * scale) / 2f);
 
-            this.imageDisplayRectangle.Width = this.image.Width * this.scale;
-            this.imageDisplayRectangle.Height = this.image.Height * this.scale;
-            this.imageDisplayRectangle.X = -contentRectangle.X * this.scale + contentDisplayPosition.X;
-            this.imageDisplayRectangle.Y = -contentRectangle.Y * this.scale + contentDisplayPosition.Y;
+            imageDisplayRectangle.Width = image.Width * scale;
+            imageDisplayRectangle.Height = image.Height * scale;
+            imageDisplayRectangle.X = -contentRectangle.X * scale + contentDisplayPosition.X;
+            imageDisplayRectangle.Y = -contentRectangle.Y * scale + contentDisplayPosition.Y;
 
-            this.selectionDisplayRectangle.Width = this.selectionRectangle.Width * this.scale;
-            this.selectionDisplayRectangle.Height = this.selectionRectangle.Height * this.scale;
-            this.selectionDisplayRectangle.X = (this.selectionRectangle.X - contentRectangle.X) * this.scale + contentDisplayPosition.X;
-            this.selectionDisplayRectangle.Y = (this.selectionRectangle.Y - contentRectangle.Y) * this.scale + contentDisplayPosition.Y;
+            selectionDisplayRectangle.Width = selectionRectangle.Width * scale;
+            selectionDisplayRectangle.Height = selectionRectangle.Height * scale;
+            selectionDisplayRectangle.X = (selectionRectangle.X - contentRectangle.X) * scale + contentDisplayPosition.X;
+            selectionDisplayRectangle.Y = (selectionRectangle.Y - contentRectangle.Y) * scale + contentDisplayPosition.Y;
 
             // Tell the PictureBox it needs to refresh
-            this.picBoxImageSelectionModifier.Invalidate();
+            picBoxImageSelectionModifier.Invalidate();
         }
 
         private void ResetSelection()
         {
             // For the selection rectangle, (0;0) is the top-left corner of the image.
-            this.selectionRectangle = new Rectangle(0, 0, image.Width, image.Height);
-            this.selectionDisplayRectangle = this.imageDisplayRectangle;
+            selectionRectangle = new Rectangle(0, 0, image.Width, image.Height);
+            selectionDisplayRectangle = imageDisplayRectangle;
 
             // Tell the PictureBox it needs to refresh
-            this.picBoxImageSelectionModifier.Invalidate();
+            picBoxImageSelectionModifier.Invalidate();
         }
 
         private void ZoomOnPoint(PointF zoomPoint, float newScale)
         {
             // The zoomPoint must remain in the same spot
             // First find what the zoomPoint is in 100% scale for both the image and the selection
-            PointF imageFixPoint = new PointF(((zoomPoint.X - this.imageDisplayRectangle.X) / this.scale) * newScale,
-                                              ((zoomPoint.Y - this.imageDisplayRectangle.Y) / this.scale) * newScale);
-            PointF selectionFixPoint = new PointF(((zoomPoint.X - this.selectionDisplayRectangle.X) / this.scale) * newScale,
-                                                  ((zoomPoint.Y - this.selectionDisplayRectangle.Y) / this.scale) * newScale);
+            PointF imageFixPoint = new PointF(((zoomPoint.X - imageDisplayRectangle.X) / scale) * newScale,
+                                              ((zoomPoint.Y - imageDisplayRectangle.Y) / scale) * newScale);
+            PointF selectionFixPoint = new PointF(((zoomPoint.X - selectionDisplayRectangle.X) / scale) * newScale,
+                                                  ((zoomPoint.Y - selectionDisplayRectangle.Y) / scale) * newScale);
 
             // We can safely change the scale now
-            this.scale = newScale;
+            scale = newScale;
 
             // Then, change the display rectangles to fit the needs
             // Point imageFixPoint has to be at zoomPoint
-            this.imageDisplayRectangle.X = zoomPoint.X - imageFixPoint.X;
-            this.imageDisplayRectangle.Y = zoomPoint.Y - imageFixPoint.Y;
-            this.imageDisplayRectangle.Width = image.Width * this.scale;
-            this.imageDisplayRectangle.Height = image.Height * this.scale;
+            imageDisplayRectangle.X = zoomPoint.X - imageFixPoint.X;
+            imageDisplayRectangle.Y = zoomPoint.Y - imageFixPoint.Y;
+            imageDisplayRectangle.Width = image.Width * scale;
+            imageDisplayRectangle.Height = image.Height * scale;
 
-            this.selectionDisplayRectangle.X = zoomPoint.X - selectionFixPoint.X;
-            this.selectionDisplayRectangle.Y = zoomPoint.Y - selectionFixPoint.Y;
-            this.selectionDisplayRectangle.Width = selectionRectangle.Width * this.scale;
-            this.selectionDisplayRectangle.Height = selectionRectangle.Height * this.scale;
+            selectionDisplayRectangle.X = zoomPoint.X - selectionFixPoint.X;
+            selectionDisplayRectangle.Y = zoomPoint.Y - selectionFixPoint.Y;
+            selectionDisplayRectangle.Width = selectionRectangle.Width * scale;
+            selectionDisplayRectangle.Height = selectionRectangle.Height * scale;
 
             // Tell the PictureBox it needs to refresh
-            this.picBoxImageSelectionModifier.Invalidate();
+            picBoxImageSelectionModifier.Invalidate();
         }
 
         private void buttonBrowse_Click(object sender, EventArgs e)
         {
-            if (this.openFileDialog.ShowDialog(this) == DialogResult.OK)
-                changeUsedImage(this.openFileDialog.FileName);
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+                changeUsedImage(openFileDialog.FileName);
         }
 
         private void picBoxImageSelectionModifier_Paint(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(Color.White);
 
-            if (this.imageLoaded)
+            if (imageLoaded)
             {
-                e.Graphics.DrawImage(this.image, this.imageDisplayRectangle);
+                e.Graphics.DrawImage(image, imageDisplayRectangle);
 
                 // Draw 4 semi-transparent rectangles around the selection rectangle:
                 e.Graphics.FillRectangle(grayScreen, new RectangleF(
-                    0, 0, this.picBoxImageSelectionModifier.ClientSize.Width,
-                    this.selectionDisplayRectangle.Top));
+                    0, 0, picBoxImageSelectionModifier.ClientSize.Width,
+                    selectionDisplayRectangle.Top));
                 e.Graphics.FillRectangle(grayScreen, new RectangleF(
-                    0, this.selectionDisplayRectangle.Top, this.selectionDisplayRectangle.Left,
-                    this.picBoxImageSelectionModifier.ClientSize.Height - this.selectionDisplayRectangle.Top));
+                    0, selectionDisplayRectangle.Top, selectionDisplayRectangle.Left,
+                    picBoxImageSelectionModifier.ClientSize.Height - selectionDisplayRectangle.Top));
                 e.Graphics.FillRectangle(grayScreen, new RectangleF(
-                    this.selectionDisplayRectangle.Right, this.selectionDisplayRectangle.Top,
-                    this.picBoxImageSelectionModifier.ClientSize.Width - this.selectionDisplayRectangle.Right,
-                    this.picBoxImageSelectionModifier.ClientSize.Height - this.selectionDisplayRectangle.Top));
+                    selectionDisplayRectangle.Right, selectionDisplayRectangle.Top,
+                    picBoxImageSelectionModifier.ClientSize.Width - selectionDisplayRectangle.Right,
+                    picBoxImageSelectionModifier.ClientSize.Height - selectionDisplayRectangle.Top));
                 e.Graphics.FillRectangle(grayScreen, new RectangleF(
-                    this.selectionDisplayRectangle.Left, this.selectionDisplayRectangle.Bottom,
-                    this.selectionDisplayRectangle.Width,
-                    this.picBoxImageSelectionModifier.ClientSize.Height - this.selectionDisplayRectangle.Bottom));
+                    selectionDisplayRectangle.Left, selectionDisplayRectangle.Bottom,
+                    selectionDisplayRectangle.Width,
+                    picBoxImageSelectionModifier.ClientSize.Height - selectionDisplayRectangle.Bottom));
 
                 // There is no method for drawing a single RectangleF...
-                e.Graphics.DrawRectangles(Pens.Red, new RectangleF[] { this.selectionDisplayRectangle });
+                e.Graphics.DrawRectangles(Pens.Red, new RectangleF[] { selectionDisplayRectangle });
             }
 
             // If the picture box is disabled, a semi-transparent dray screen is drawn on it
-            if (!this.picBoxImageSelectionModifier.Enabled)
+            if (!picBoxImageSelectionModifier.Enabled)
             {
                 e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(128, Color.LightGray)),
-                    this.picBoxImageSelectionModifier.ClientRectangle);
+                    picBoxImageSelectionModifier.ClientRectangle);
             }
         }
 
         private void checkBoxUseImageBg_CheckedChanged(object sender, EventArgs e)
         {
-            this.groupBoxImageBg.Enabled = this.checkBoxUseImageBg.Checked;
+            groupBoxImageBg.Enabled = checkBoxUseImageBg.Checked;
 
-            this.trackBarOpacity.Enabled = this.checkBoxUseImageBg.Checked;
-            this.labelOpacity.Enabled = this.checkBoxUseImageBg.Checked;
-            this.labelOpacityDisplay.Enabled = this.checkBoxUseImageBg.Checked;
+            trackBarOpacity.Enabled = checkBoxUseImageBg.Checked;
+            labelOpacity.Enabled = checkBoxUseImageBg.Checked;
+            labelOpacityDisplay.Enabled = checkBoxUseImageBg.Checked;
 
-            bool radioButtonsState = !this.checkBoxUseImageBg.Checked || this.trackBarOpacity.Value != 0;
-            this.radioButtonDefault.Enabled = radioButtonsState;
-            this.radioButtonPlain.Enabled = radioButtonsState;
-            this.radioButtonBlack.Enabled = radioButtonsState;
+            bool radioButtonsState = !checkBoxUseImageBg.Checked || trackBarOpacity.Value != 0;
+            radioButtonDefault.Enabled = radioButtonsState;
+            radioButtonPlain.Enabled = radioButtonsState;
+            radioButtonBlack.Enabled = radioButtonsState;
         }
 
         private void trackBarOpacity_ValueChanged(object sender, EventArgs e)
         {
-            bool valueNotZero = this.trackBarOpacity.Value != 0;
-            this.radioButtonDefault.Enabled = valueNotZero;
-            this.radioButtonPlain.Enabled = valueNotZero;
-            this.radioButtonBlack.Enabled = valueNotZero;
+            bool valueNotZero = trackBarOpacity.Value != 0;
+            radioButtonDefault.Enabled = valueNotZero;
+            radioButtonPlain.Enabled = valueNotZero;
+            radioButtonBlack.Enabled = valueNotZero;
 
-            this.labelOpacityDisplay.Text = (valueNotZero) ? this.trackBarOpacity.Value + "%" : "Transparent";
+            labelOpacityDisplay.Text = (valueNotZero) ? trackBarOpacity.Value + "%" : "Transparent";
         }
 
         private void trackBarZoom_Scroll(object sender, EventArgs e)
         {
             ZoomOnPoint(new PointF(
-                this.picBoxImageSelectionModifier.ClientSize.Width / 2f,
-                this.picBoxImageSelectionModifier.ClientSize.Height / 2f),
-                this.trackBarZoom.Value / 100f);
+                picBoxImageSelectionModifier.ClientSize.Width / 2f,
+                picBoxImageSelectionModifier.ClientSize.Height / 2f),
+                trackBarZoom.Value / 100f);
         }
 
         private void trackBarZoom_ValueChanged(object sender, EventArgs e)
         {
-            this.labelZoomDisplay.Text = this.trackBarZoom.Value + "%";
+            labelZoomDisplay.Text = trackBarZoom.Value + "%";
         }
 
         private void buttonZoomFit_Click(object sender, EventArgs e)
@@ -374,39 +374,39 @@ namespace WSplitTimer
 
         private void buttonAutoSelect_Click(object sender, EventArgs e)
         {
-            this.selectionRectangle.Size = this.wsplit.Size;
-            this.selectionRectangle.X = this.image.Width / 2 - this.selectionRectangle.Width / 2;
-            this.selectionRectangle.Y = this.image.Height / 2 - this.selectionRectangle.Height / 2;
+            selectionRectangle.Size = wsplit.Size;
+            selectionRectangle.X = image.Width / 2 - selectionRectangle.Width / 2;
+            selectionRectangle.Y = image.Height / 2 - selectionRectangle.Height / 2;
 
-            this.selectionDisplayRectangle.Width = this.selectionRectangle.Width * this.scale;
-            this.selectionDisplayRectangle.Height = this.selectionRectangle.Height * this.scale;
-            this.selectionDisplayRectangle.X = this.selectionRectangle.X * this.scale + this.imageDisplayRectangle.X;
-            this.selectionDisplayRectangle.Y = this.selectionRectangle.Y * this.scale + this.imageDisplayRectangle.Y;
+            selectionDisplayRectangle.Width = selectionRectangle.Width * scale;
+            selectionDisplayRectangle.Height = selectionRectangle.Height * scale;
+            selectionDisplayRectangle.X = selectionRectangle.X * scale + imageDisplayRectangle.X;
+            selectionDisplayRectangle.Y = selectionRectangle.Y * scale + imageDisplayRectangle.Y;
 
-            this.picBoxImageSelectionModifier.Invalidate();
+            picBoxImageSelectionModifier.Invalidate();
         }
 
         private void picBoxImageSelectionModifier_MouseEnter(object sender, EventArgs e)
         {
-            if (!this.picBoxImageSelectionModifier.Focused)
-                this.picBoxImageSelectionModifier.Focus();
+            if (!picBoxImageSelectionModifier.Focused)
+                picBoxImageSelectionModifier.Focus();
         }
 
         private void picBoxImageSelectionModifier_MouseLeave(object sender, EventArgs e)
         {
-            if (this.picBoxImageSelectionModifier.Focused)
-                this.picBoxImageSelectionModifier.Parent.Focus();
+            if (picBoxImageSelectionModifier.Focused)
+                picBoxImageSelectionModifier.Parent.Focus();
         }
 
         private void picBoxImageSelectionModifier_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (!this.moving)
+            if (!moving)
             {
                 int newValue = Math.Max(
-                    Math.Min((e.Delta / 30) + this.trackBarZoom.Value, trackBarZoom.Maximum),
+                    Math.Min((e.Delta / 30) + trackBarZoom.Value, trackBarZoom.Maximum),
                     trackBarZoom.Minimum);
 
-                this.trackBarZoom.Value = newValue;
+                trackBarZoom.Value = newValue;
                 ZoomOnPoint(e.Location, newValue / 100f);
             }
         }
@@ -415,77 +415,74 @@ namespace WSplitTimer
         {
             if (e.Button == MouseButtons.Middle)
             {
-                this.scrolling = true;
-                this.scrollingCursorStartPoint = e.Location;
-                this.scrollingImageStartPoint = this.imageDisplayRectangle.Location;
-                this.scrollingSelectionStartPoint = this.selectionDisplayRectangle.Location;
+                scrolling = true;
+                scrollingCursorStartPoint = e.Location;
+                scrollingImageStartPoint = imageDisplayRectangle.Location;
+                scrollingSelectionStartPoint = selectionDisplayRectangle.Location;
 
-                this.picBoxImageSelectionModifier.Cursor = Cursors.SizeAll;
+                picBoxImageSelectionModifier.Cursor = Cursors.SizeAll;
             }
-
             else if (e.Button == MouseButtons.Left)
             {
-                if (!this.scrolling)
+                if (!scrolling)
                 {
                     // Check if the mouse is over any of the sides of the rectangle
                     if (overLeft)
                     {
-                        this.resizingSelectionStartRect = this.selectionRectangle;
-                        this.resizingLeft = true;
+                        resizingSelectionStartRect = selectionRectangle;
+                        resizingLeft = true;
 
                         if (overTop)
                         {
-                            this.resizingTop = true;
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
+                            resizingTop = true;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
                         }
                         else if (overBottom)
                         {
-                            this.resizingBottom = true;
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
+                            resizingBottom = true;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
                         }
                         else
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
                     }
-
                     else if (overRight)
                     {
-                        this.resizingSelectionStartRect = this.selectionRectangle;
-                        this.resizingRight = true;
+                        resizingSelectionStartRect = selectionRectangle;
+                        resizingRight = true;
 
                         if (overTop)
                         {
-                            this.resizingTop = true;
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
+                            resizingTop = true;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
                         }
                         else if (overBottom)
                         {
-                            this.resizingBottom = true;
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
+                            resizingBottom = true;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
                         }
                         else
-                            this.picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
+                            picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
                     }
-
                     else if (overTop)
                     {
-                        this.resizingSelectionStartRect = this.selectionRectangle;
-                        this.resizingTop = true;
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
+                        resizingSelectionStartRect = selectionRectangle;
+                        resizingTop = true;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
                     }
                     else if (overBottom)
                     {
-                        this.resizingSelectionStartRect = this.selectionRectangle;
-                        this.resizingBottom = true;
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
+                        resizingSelectionStartRect = selectionRectangle;
+                        resizingBottom = true;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
                     }
 
                     // At last, if it's over none of the borders, check if the cursor is in the rectangle for movement
-                    else if (this.selectionDisplayRectangle.Left < e.X && e.X < this.selectionDisplayRectangle.Right
-                        && this.selectionDisplayRectangle.Top < e.Y && e.Y < this.selectionDisplayRectangle.Bottom)
+                    else if (selectionDisplayRectangle.Left < e.X && e.X < selectionDisplayRectangle.Right
+                        && selectionDisplayRectangle.Top < e.Y && e.Y < selectionDisplayRectangle.Bottom)
                     {
-                        this.moving = true;
-                        this.movingCursorStartPoint = e.Location;
-                        this.movingUnscaledSelectionStartPoint = this.selectionRectangle.Location;
+                        moving = true;
+                        movingCursorStartPoint = e.Location;
+                        movingUnscaledSelectionStartPoint = selectionRectangle.Location;
                     }
                 }
             }
@@ -495,106 +492,101 @@ namespace WSplitTimer
         {
             // Stop every interaction with the picture box
             if (e.Button == MouseButtons.Middle)
-                this.scrolling = false;
-
+                scrolling = false;
             else if (e.Button == MouseButtons.Left)
             {
-                this.resizingLeft = false;
-                this.resizingRight = false;
-                this.resizingTop = false;
-                this.resizingBottom = false;
-                this.moving = false;
+                resizingLeft = false;
+                resizingRight = false;
+                resizingTop = false;
+                resizingBottom = false;
+                moving = false;
             }
         }
 
         private void picBoxImageSelectionModifier_MouseMove(object sender, MouseEventArgs e)
         {
-            if (this.scrolling)
+            if (scrolling)
             {
                 SizeF cursorLocationDifference = new SizeF(
-                    this.scrollingCursorStartPoint.X - e.X, this.scrollingCursorStartPoint.Y - e.Y);
+                    scrollingCursorStartPoint.X - e.X, scrollingCursorStartPoint.Y - e.Y);
 
                 // Move both display rectangles
-                this.imageDisplayRectangle.Location = PointF.Subtract(this.scrollingImageStartPoint, cursorLocationDifference);
-                this.selectionDisplayRectangle.Location = PointF.Subtract(this.scrollingSelectionStartPoint, cursorLocationDifference);
+                imageDisplayRectangle.Location = PointF.Subtract(scrollingImageStartPoint, cursorLocationDifference);
+                selectionDisplayRectangle.Location = PointF.Subtract(scrollingSelectionStartPoint, cursorLocationDifference);
 
-                this.picBoxImageSelectionModifier.Invalidate();
+                picBoxImageSelectionModifier.Invalidate();
             }
-
-            else if (this.moving)
+            else if (moving)
             {
                 // For the sake of limiting movement, the modifications have to first be applied to the
                 // unscaled selection rectangle.
-                this.selectionRectangle.X = this.movingUnscaledSelectionStartPoint.X - (int)((this.movingCursorStartPoint.X - e.X) / this.scale);
-                this.selectionRectangle.Y = this.movingUnscaledSelectionStartPoint.Y - (int)((this.movingCursorStartPoint.Y - e.Y) / this.scale);
+                selectionRectangle.X = movingUnscaledSelectionStartPoint.X - (int)((movingCursorStartPoint.X - e.X) / scale);
+                selectionRectangle.Y = movingUnscaledSelectionStartPoint.Y - (int)((movingCursorStartPoint.Y - e.Y) / scale);
 
-                if (this.selectionRectangle.Right < 5)
-                    this.selectionRectangle.X = -this.selectionRectangle.Width + 5;
-                else if (this.selectionRectangle.Left > this.image.Width - 5)
-                    this.selectionRectangle.X = this.image.Width - 5;
+                if (selectionRectangle.Right < 5)
+                    selectionRectangle.X = -selectionRectangle.Width + 5;
+                else if (selectionRectangle.Left > image.Width - 5)
+                    selectionRectangle.X = image.Width - 5;
 
-                if (this.selectionRectangle.Bottom < 5)
-                    this.selectionRectangle.Y = -this.selectionRectangle.Height + 5;
-                else if (this.selectionRectangle.Top > this.image.Height - 5)
-                    this.selectionRectangle.Y = this.image.Height - 5;
+                if (selectionRectangle.Bottom < 5)
+                    selectionRectangle.Y = -selectionRectangle.Height + 5;
+                else if (selectionRectangle.Top > image.Height - 5)
+                    selectionRectangle.Y = image.Height - 5;
 
                 // Calculate the new selection display rectangle from the selection rectangle
-                this.selectionDisplayRectangle.X = (this.selectionRectangle.X * this.scale) + this.imageDisplayRectangle.X;
-                this.selectionDisplayRectangle.Y = (this.selectionRectangle.Y * this.scale) + this.imageDisplayRectangle.Y;
+                selectionDisplayRectangle.X = (selectionRectangle.X * scale) + imageDisplayRectangle.X;
+                selectionDisplayRectangle.Y = (selectionRectangle.Y * scale) + imageDisplayRectangle.Y;
 
-                this.picBoxImageSelectionModifier.Invalidate();
+                picBoxImageSelectionModifier.Invalidate();
             }
-
-            else if (this.resizingLeft || this.resizingRight || this.resizingTop || this.resizingBottom)
+            else if (resizingLeft || resizingRight || resizingTop || resizingBottom)
             {
                 // If the Shift key is pressed, keep the aspect ratio
                 if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
                 {
-                    if (this.resizingLeft || this.resizingRight)
+                    if (resizingLeft || resizingRight)
                     {
-                        float newOldRatio = Math.Max((this.resizingLeft)
-                                ? Math.Max(this.resizingSelectionStartRect.Right - (e.X - this.imageDisplayRectangle.X) / this.scale,
-                                    this.resizingSelectionStartRect.Right - this.image.Width + 5f)
-                                : Math.Max((e.X - this.selectionDisplayRectangle.X) / this.scale, -this.resizingSelectionStartRect.X + 5f),
-                            5f) / this.resizingSelectionStartRect.Width;
+                        float newOldRatio = Math.Max((resizingLeft)
+                                ? Math.Max(resizingSelectionStartRect.Right - (e.X - imageDisplayRectangle.X) / scale,
+                                    resizingSelectionStartRect.Right - image.Width + 5f)
+                                : Math.Max((e.X - selectionDisplayRectangle.X) / scale, -resizingSelectionStartRect.X + 5f),
+                            5f) / resizingSelectionStartRect.Width;
 
                         // Change the behavior depending on what borders are also being resized
-                        if (this.resizingTop)
+                        if (resizingTop)
                         {
                             newOldRatio = Math.Max(newOldRatio, new float[] {
-                                    this.resizingSelectionStartRect.Bottom - (e.Y - this.imageDisplayRectangle.Y) / this.scale,
-                                    this.resizingSelectionStartRect.Bottom - this.image.Height + 5f, 5f
-                                }.Max() / this.resizingSelectionStartRect.Height);
+                                    resizingSelectionStartRect.Bottom - (e.Y - imageDisplayRectangle.Y) / scale,
+                                    resizingSelectionStartRect.Bottom - image.Height + 5f, 5f
+                                }.Max() / resizingSelectionStartRect.Height);
 
-                            this.selectionRectangle.Y = this.resizingSelectionStartRect.Bottom -
-                                (int)(this.resizingSelectionStartRect.Height * newOldRatio);
+                            selectionRectangle.Y = resizingSelectionStartRect.Bottom -
+                                (int)(resizingSelectionStartRect.Height * newOldRatio);
                         }
-
-                        else if (this.resizingBottom)
+                        else if (resizingBottom)
                         {
                             newOldRatio = Math.Max(newOldRatio, new float[] {
-                                    (e.Y - this.selectionDisplayRectangle.Y) / this.scale,
-                                    -this.resizingSelectionStartRect.Y + 5f, 5f
-                                }.Max() / this.resizingSelectionStartRect.Height);
+                                    (e.Y - selectionDisplayRectangle.Y) / scale,
+                                    -resizingSelectionStartRect.Y + 5f, 5f
+                                }.Max() / resizingSelectionStartRect.Height);
                         }
-
                         else
                         {
                             newOldRatio = Math.Max(newOldRatio, new float[] {
-                                    this.resizingSelectionStartRect.Height - 2 * ((this.image.Height - 5f) - this.resizingSelectionStartRect.Top),
-                                    this.resizingSelectionStartRect.Height - 2 * (this.resizingSelectionStartRect.Bottom - 5f), 5f
-                                }.Max() / this.resizingSelectionStartRect.Height);
+                                    resizingSelectionStartRect.Height - 2 * ((image.Height - 5f) - resizingSelectionStartRect.Top),
+                                    resizingSelectionStartRect.Height - 2 * (resizingSelectionStartRect.Bottom - 5f), 5f
+                                }.Max() / resizingSelectionStartRect.Height);
 
-                            this.selectionRectangle.Y = this.resizingSelectionStartRect.Y + (this.resizingSelectionStartRect.Height -
-                                (int)(this.resizingSelectionStartRect.Height * newOldRatio)) / 2;
+                            selectionRectangle.Y = resizingSelectionStartRect.Y + (resizingSelectionStartRect.Height -
+                                (int)(resizingSelectionStartRect.Height * newOldRatio)) / 2;
                         }
 
                         // The Width and Height calculation is the same for all cases
-                        this.selectionRectangle.Width = (int)(this.resizingSelectionStartRect.Width * newOldRatio);
-                        this.selectionRectangle.Height = (int)(this.resizingSelectionStartRect.Height * newOldRatio);
+                        selectionRectangle.Width = (int)(resizingSelectionStartRect.Width * newOldRatio);
+                        selectionRectangle.Height = (int)(resizingSelectionStartRect.Height * newOldRatio);
 
-                        if (this.resizingLeft)
-                            this.selectionRectangle.X = this.resizingSelectionStartRect.Right - this.selectionRectangle.Width;
+                        if (resizingLeft)
+                            selectionRectangle.X = resizingSelectionStartRect.Right - selectionRectangle.Width;
                     }
 
                     // Here, it's either top or bottom, without the other borders
@@ -602,113 +594,106 @@ namespace WSplitTimer
                     {
                         float newOldRatio = Math.Max(
                             Math.Max(
-                                (this.resizingTop)
-                                    ? Math.Max(this.resizingSelectionStartRect.Bottom - (e.Y - this.imageDisplayRectangle.Y) / this.scale,
-                                        this.resizingSelectionStartRect.Bottom - this.image.Height + 5f)
-                                    : Math.Max((e.Y - this.selectionDisplayRectangle.Y) / this.scale, -this.resizingSelectionStartRect.Y + 5f),
-                                5f) / this.resizingSelectionStartRect.Height,
+                                (resizingTop)
+                                    ? Math.Max(resizingSelectionStartRect.Bottom - (e.Y - imageDisplayRectangle.Y) / scale,
+                                        resizingSelectionStartRect.Bottom - image.Height + 5f)
+                                    : Math.Max((e.Y - selectionDisplayRectangle.Y) / scale, -resizingSelectionStartRect.Y + 5f),
+                                5f) / resizingSelectionStartRect.Height,
                             new float[] {
-                                this.resizingSelectionStartRect.Width - 2 * ((this.image.Width - 5f) - this.resizingSelectionStartRect.Left),
-                                this.resizingSelectionStartRect.Width - 2 * (this.resizingSelectionStartRect.Right - 5f), 5f
-                            }.Max() / this.resizingSelectionStartRect.Width);
+                                resizingSelectionStartRect.Width - 2 * ((image.Width - 5f) - resizingSelectionStartRect.Left),
+                                resizingSelectionStartRect.Width - 2 * (resizingSelectionStartRect.Right - 5f), 5f
+                            }.Max() / resizingSelectionStartRect.Width);
 
+                        selectionRectangle.X = resizingSelectionStartRect.X + (resizingSelectionStartRect.Width -
+                            (selectionRectangle.Width = (int)(resizingSelectionStartRect.Width * newOldRatio))) / 2;
+                        selectionRectangle.Height = (int)(resizingSelectionStartRect.Height * newOldRatio);
 
-
-                        this.selectionRectangle.X = this.resizingSelectionStartRect.X + (this.resizingSelectionStartRect.Width -
-                            (this.selectionRectangle.Width = (int)(this.resizingSelectionStartRect.Width * newOldRatio))) / 2;
-                        this.selectionRectangle.Height = (int)(this.resizingSelectionStartRect.Height * newOldRatio);
-
-                        if (this.resizingTop)   // This line only applies to Top
-                            this.selectionRectangle.Y = this.resizingSelectionStartRect.Bottom - this.selectionRectangle.Height;
+                        if (resizingTop)   // This line only applies to Top
+                            selectionRectangle.Y = resizingSelectionStartRect.Bottom - selectionRectangle.Height;
                     }
                 }
                 // Change size without caring about the aspect ratio
                 else
                 {
                     // Left side or more
-                    if (this.resizingLeft)
+                    if (resizingLeft)
                     {
-                        int previousX = this.selectionRectangle.X;
-                        this.selectionRectangle.X = (int)((e.X - this.imageDisplayRectangle.X) / this.scale);
-                        if (this.selectionRectangle.Left >= this.image.Width)
-                            this.selectionRectangle.X = this.image.Width - 1;
-                        this.selectionRectangle.Width -= this.selectionRectangle.X - previousX;
+                        int previousX = selectionRectangle.X;
+                        selectionRectangle.X = (int)((e.X - imageDisplayRectangle.X) / scale);
+                        if (selectionRectangle.Left >= image.Width)
+                            selectionRectangle.X = image.Width - 1;
+                        selectionRectangle.Width -= selectionRectangle.X - previousX;
                     }
 
                     // Right side or more
-                    else if (this.resizingRight)
+                    else if (resizingRight)
                     {
-                        this.selectionRectangle.Width = (int)((e.X - this.selectionDisplayRectangle.X) / this.scale);
-                        if (this.selectionRectangle.Right <= 0)
-                            this.selectionRectangle.Width = -this.selectionRectangle.X + 1;
+                        selectionRectangle.Width = (int)((e.X - selectionDisplayRectangle.X) / scale);
+                        if (selectionRectangle.Right <= 0)
+                            selectionRectangle.Width = -selectionRectangle.X + 1;
                     }
 
                     // Top side or more
-                    if (this.resizingTop)
+                    if (resizingTop)
                     {
-                        int previousY = this.selectionRectangle.Y;
-                        this.selectionRectangle.Y = (int)((e.Y - this.imageDisplayRectangle.Y) / this.scale);
-                        if (this.selectionRectangle.Top >= this.image.Height)
-                            this.selectionRectangle.Y = this.image.Height - 1;
-                        this.selectionRectangle.Height -= this.selectionRectangle.Y - previousY;
+                        int previousY = selectionRectangle.Y;
+                        selectionRectangle.Y = (int)((e.Y - imageDisplayRectangle.Y) / scale);
+                        if (selectionRectangle.Top >= image.Height)
+                            selectionRectangle.Y = image.Height - 1;
+                        selectionRectangle.Height -= selectionRectangle.Y - previousY;
                     }
 
                     // Bottom side or more
-                    else if (this.resizingBottom)
+                    else if (resizingBottom)
                     {
-                        this.selectionRectangle.Height = (int)((e.Y - this.selectionDisplayRectangle.Y) / this.scale);
-                        if (this.selectionRectangle.Bottom <= 0)
-                            this.selectionRectangle.Height = -this.selectionRectangle.Y + 1;
+                        selectionRectangle.Height = (int)((e.Y - selectionDisplayRectangle.Y) / scale);
+                        if (selectionRectangle.Bottom <= 0)
+                            selectionRectangle.Height = -selectionRectangle.Y + 1;
                     }
 
                     // Apply size limitations
-                    if (this.selectionRectangle.Width < 5)
+                    if (selectionRectangle.Width < 5)
                     {
-                        if (this.resizingLeft)
-                            this.selectionRectangle.X = this.selectionRectangle.Right - 5;
-                        this.selectionRectangle.Width = 5;
+                        if (resizingLeft)
+                            selectionRectangle.X = selectionRectangle.Right - 5;
+                        selectionRectangle.Width = 5;
                     }
 
-                    if (this.selectionRectangle.Height < 5)
+                    if (selectionRectangle.Height < 5)
                     {
-                        if (this.resizingTop)
-                            this.selectionRectangle.Y = this.selectionRectangle.Bottom - 5;
-                        this.selectionRectangle.Height = 5;
+                        if (resizingTop)
+                            selectionRectangle.Y = selectionRectangle.Bottom - 5;
+                        selectionRectangle.Height = 5;
                     }
                 }
 
-
                 // Convert selection rectangle to selection display rectangle
-                this.selectionDisplayRectangle.X = (this.selectionRectangle.X * this.scale) + this.imageDisplayRectangle.X;
-                this.selectionDisplayRectangle.Y = (this.selectionRectangle.Y * this.scale) + this.imageDisplayRectangle.Y;
-                this.selectionDisplayRectangle.Width = this.selectionRectangle.Width * this.scale;
-                this.selectionDisplayRectangle.Height = this.selectionRectangle.Height * this.scale;
+                selectionDisplayRectangle.X = (selectionRectangle.X * scale) + imageDisplayRectangle.X;
+                selectionDisplayRectangle.Y = (selectionRectangle.Y * scale) + imageDisplayRectangle.Y;
+                selectionDisplayRectangle.Width = selectionRectangle.Width * scale;
+                selectionDisplayRectangle.Height = selectionRectangle.Height * scale;
 
-                this.picBoxImageSelectionModifier.Invalidate();
+                picBoxImageSelectionModifier.Invalidate();
             }
-
             else
             {
                 // Assume the cursor may not be over any border anymore
-                this.overLeft = false;
-                this.overTop = false;
-                this.overBottom = false;
-                this.overRight = false;
+                overLeft = false;
+                overTop = false;
+                overBottom = false;
+                overRight = false;
 
                 // Check if the cursor is over any border of the selection rectangle
                 if (selectionDisplayRectangle.Left - 5 <= e.X && e.X <= selectionDisplayRectangle.Left + 5
                     && selectionDisplayRectangle.Top - 5 <= e.Y && e.Y <= selectionDisplayRectangle.Bottom + 5)
                     overLeft = true;
-
                 else if (selectionDisplayRectangle.Right - 5 <= e.X && e.X <= selectionDisplayRectangle.Right + 5
                     && selectionDisplayRectangle.Top - 5 <= e.Y && e.Y <= selectionDisplayRectangle.Bottom + 5)
                     overRight = true;
 
-
                 if (selectionDisplayRectangle.Left - 5 <= e.X && e.X <= selectionDisplayRectangle.Right + 5
                     && selectionDisplayRectangle.Top - 5 <= e.Y && e.Y <= selectionDisplayRectangle.Top + 5)
                     overTop = true;
-
                 else if (selectionDisplayRectangle.Left - 5 <= e.X && e.X <= selectionDisplayRectangle.Right + 5
                     && selectionDisplayRectangle.Bottom - 5 <= e.Y && e.Y <= selectionDisplayRectangle.Bottom + 5)
                     overBottom = true;
@@ -717,28 +702,25 @@ namespace WSplitTimer
                 if (overLeft)
                 {
                     if (overTop)
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
                     else if (overBottom)
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
                     else
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
                 }
-
                 else if (overRight)
                 {
                     if (overTop)
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNESW;
                     else if (overBottom)
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeNWSE;
                     else
-                        this.picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
+                        picBoxImageSelectionModifier.Cursor = Cursors.SizeWE;
                 }
-
                 else if (overTop || overBottom)
-                    this.picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
-
+                    picBoxImageSelectionModifier.Cursor = Cursors.SizeNS;
                 else    // If it is over none of the borders, default cursor
-                    this.picBoxImageSelectionModifier.Cursor = Cursors.Default;
+                    picBoxImageSelectionModifier.Cursor = Cursors.Default;
             }
         }
 

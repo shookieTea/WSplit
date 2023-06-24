@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -13,7 +14,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using WSplitTimer.Properties;
-using System.Diagnostics;
 
 namespace WSplitTimer
 {
@@ -94,7 +94,7 @@ namespace WSplitTimer
         public Font clockMed;
         public Font displayFont;
         public Font timeFont;
-        private PrivateFontCollection privateFontCollection = new PrivateFontCollection();
+        private readonly PrivateFontCollection privateFontCollection = new PrivateFontCollection();
 
         private SaveFileDialog saveFileDialog;
         private OpenFileDialog openFileDialog;
@@ -102,25 +102,30 @@ namespace WSplitTimer
 
         //private int attemptCount;
         private Size clockMinimumSize = new Size(120, 25);
+
         private Size clockMinimumSizeAbsolute = new Size(120, 25);
         private Rectangle clockRect;
         private bool clockResize;
         private IContainer components;
         private DisplayMode currentDispMode = DisplayMode.Null;
-        private string decimalChar = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+        private static readonly string numberDecimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+        private readonly string decimalChar = numberDecimalSeparator;
         private Size detailPreferredSize = new Size(120, 0x19);
         private bool detailResizing;
         private int detailResizingY;
         private Timer doubleTapDelay;
-        private DetailedView dview;
+        private readonly DetailedView dview;
         private Timer flashDelay;
+
         //private int offsetStart;
         private DateTime offsetStartTime = new DateTime();
+
         //private string runFile;
         //private string runGoal;
         //private string runTitle = "";
         private int segHeight = 14;
-        public Split split = new Split();
+
+        public RunSplits split = new RunSplits();
         private Timer startDelay;
         private Timer stopwatch;
         public DualStopwatch timer = new DualStopwatch(false);
@@ -137,6 +142,7 @@ namespace WSplitTimer
 
         // Apparently unused variables...
         public const int HOTKEY_ID = 0x9d82;
+
         public KeyModifiers hotkeyMod;
 
         // The painter object is a sub object that has for only purpose to separate
@@ -148,29 +154,32 @@ namespace WSplitTimer
         // to be able to paint it correctly. Eventually, it would be a good thing to remove that
         // dependancy and have the WSplit object parameter the Painter object rather than have the
         // Painter object take values from the WSplit members.
-        private Painter painter;
+        private readonly Painter painter;
 
         //test
         private int r = 255;
+
         private int g = 127;
         private int b = 255;
-        private bool rg = false;
+        private readonly bool rg = false;
         private bool gg = false;
-        private bool gb = false;
+        private readonly bool gb = false;
         private bool bb = false;
-        private bool br = false;
+        private readonly bool br = false;
         private bool rr = true;
-
-
 
         [DllImport("gdi32.dll")]
         private static extern IntPtr AddFontMemResourceEx(byte[] pbFont, int cbFont, IntPtr pdv, out uint pcFonts);
+
         [DllImport("user32.dll")]
         public static extern bool RegisterHotKey(IntPtr hWnd, int id, KeyModifiers fsModifiers, uint vk);
+
         [DllImport("user32.dll")]
         public static extern bool ReleaseCapture();
+
         [DllImport("user32.dll")]
         public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
         [DllImport("user32.dll")]
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
@@ -182,34 +191,34 @@ namespace WSplitTimer
         {
             get
             {
-                if (this.settingsDialog == null)
-                    this.settingsDialog = new SettingsDialog();
-                return this.settingsDialog;
+                if (settingsDialog == null)
+                    settingsDialog = new SettingsDialog();
+                return settingsDialog;
             }
         }
 
         public WSplit()
         {
-            this.InitializeComponent();
-            base.Paint += new PaintEventHandler(this.clockPaint);
+            InitializeComponent();
+            base.Paint += new PaintEventHandler(clockPaint);
             base.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             base.ResizeRedraw = true;
 
             // Eventually, the painter should not be dependant of the WSplit object...
-            this.painter = new Painter(this);
+            painter = new Painter(this);
 
-            this.dview = new DetailedView(this.split, this);
-            this.Initialize();
+            dview = new DetailedView(split, this);
+            Initialize();
         }
 
         private void aboutButton_Click(object sender, EventArgs e)
         {
             string str = Assembly.GetExecutingAssembly().GetName().Name + " v" + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
             DateTime buildDateTime = GetBuildDateTime(Assembly.GetExecutingAssembly());
-            double driftMilliseconds = this.timer.driftMilliseconds;
+            double driftMilliseconds = timer.driftMilliseconds;
             string str2 = "Current fallback timer: " + string.Format("{0:+0.000;-0.000}", driftMilliseconds / 1000.0) + "s";
             string str3 = "";
-            if (this.timer.useFallback)
+            if (timer.useFallback)
                 str3 = " [Using Fallback]";
 
             MessageBoxEx.Show(this, str + Environment.NewLine +
@@ -227,51 +236,51 @@ namespace WSplitTimer
 
         private void advancedDetailButton_Click(object sender, EventArgs e)
         {
-            if (this.advancedDetailButton.Checked)
+            if (advancedDetailButton.Checked)
             {
-                if (this.split.LiveRun)
-                    this.dview.Show();
+                if (split.LiveRun)
+                    dview.Show();
             }
             else
 
-                this.dview.Hide();
+                dview.Hide();
         }
 
         private void alwaysOnTop_Click(object sender, EventArgs e)
         {
             Settings.Profile.OnTop = !Settings.Profile.OnTop;
-            this.alwaysOnTop.Checked = Settings.Profile.OnTop;
+            alwaysOnTop.Checked = Settings.Profile.OnTop;
             base.TopMost = Settings.Profile.OnTop;
         }
 
         private void bestAsOverallButton_Click(object sender, EventArgs e)
         {
-            this.bestAsOverallButton.Checked = true;
-            this.bestAsSplitsButton.Checked = false;
+            bestAsOverallButton.Checked = true;
+            bestAsSplitsButton.Checked = false;
             Settings.Profile.BestAsOverall = true;
         }
 
         private void bestAsSplitsButton_Click(object sender, EventArgs e)
         {
-            this.bestAsOverallButton.Checked = false;
-            this.bestAsSplitsButton.Checked = true;
+            bestAsOverallButton.Checked = false;
+            bestAsSplitsButton.Checked = true;
             Settings.Profile.BestAsOverall = false;
         }
 
         private void blackBg_Click(object sender, EventArgs e)
         {
-            this.plainBg.Checked = false;
+            plainBg.Checked = false;
             Settings.Profile.BackgroundPlain = false;
             Settings.Profile.BackgroundBlack = !Settings.Profile.BackgroundBlack;
-            this.blackBg.Checked = Settings.Profile.BackgroundBlack;
-            this.painter.RequestBackgroundRedraw();
+            blackBg.Checked = Settings.Profile.BackgroundBlack;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void clear_Click(object sender, EventArgs e)
         {
             Settings.Profile.RecentFiles.Clear();
-            this.populateRecentFiles();
+            populateRecentFiles();
         }
 
         private void clearHotkeys()
@@ -283,94 +292,90 @@ namespace WSplitTimer
         private void clockAccent_Click(object sender, EventArgs e)
         {
             Settings.Profile.ClockAccent = !Settings.Profile.ClockAccent;
-            this.clockAccent.Checked = Settings.Profile.ClockAccent;
-            this.painter.RequestBackgroundRedraw();
+            clockAccent.Checked = Settings.Profile.ClockAccent;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void clockPaint(object sender, PaintEventArgs e)
         {
             // The painter object will take care of drawing the clock
-            this.painter.PaintAll(e.Graphics);
+            painter.PaintAll(e.Graphics);
         }
 
         private void closeButton_Click(object sender, EventArgs e)
         {
-            if (this.promptForSave())
+            if (promptForSave())
             {
-                this.closeFile();
+                closeFile();
             }
         }
 
         private void closeFile()
         {
-            this.split.Clear();
-            this.split.RunTitle = "";
-            this.split.RunGoal = "";
-            this.split.AttemptsCount = 0;
-            this.split.StartDelay = 0;
-            this.detailPreferredSize = this.clockMinimumSize;
-            this.InitializeDisplay();
+            split.Clear();
+            detailPreferredSize = clockMinimumSize;
+            InitializeDisplay();
         }
 
         private void compareOldButton_Click(object sender, EventArgs e)
         {
-            this.SetCompareOld();
+            SetCompareOld();
         }
 
         private void compareBestButton_Click(object sender, EventArgs e)
         {
-            this.SetCompareBest();
+            SetCompareBest();
         }
 
         private void compareFastestButton_Click(object sender, EventArgs e)
         {
-            this.SetCompareFastest();
+            SetCompareFastest();
         }
 
         private void compareSumBestButton_Click(object sender, EventArgs e)
         {
-            this.SetCompareSoB();
+            SetCompareSoB();
         }
 
         private void SetCompareOld()
         {
             Settings.Profile.CompareAgainst = 1;
-            this.compareOldButton.Checked = true;
-            this.compareBestButton.Checked = false;
-            this.compareFastestButton.Checked = false;
-            this.compareSumBestButton.Checked = false;
-            this.updateDisplay();
+            compareOldButton.Checked = true;
+            compareBestButton.Checked = false;
+            compareFastestButton.Checked = false;
+            compareSumBestButton.Checked = false;
+            updateDisplay();
         }
 
         private void SetCompareBest()
         {
             Settings.Profile.CompareAgainst = 2;
-            this.compareOldButton.Checked = false;
-            this.compareBestButton.Checked = true;
-            this.compareFastestButton.Checked = false;
-            this.compareSumBestButton.Checked = false;
-            this.updateDisplay();
+            compareOldButton.Checked = false;
+            compareBestButton.Checked = true;
+            compareFastestButton.Checked = false;
+            compareSumBestButton.Checked = false;
+            updateDisplay();
         }
 
         private void SetCompareFastest()
         {
             Settings.Profile.CompareAgainst = 0;
-            this.compareOldButton.Checked = false;
-            this.compareBestButton.Checked = false;
-            this.compareFastestButton.Checked = true;
-            this.compareSumBestButton.Checked = false;
-            this.updateDisplay();
+            compareOldButton.Checked = false;
+            compareBestButton.Checked = false;
+            compareFastestButton.Checked = true;
+            compareSumBestButton.Checked = false;
+            updateDisplay();
         }
 
         private void SetCompareSoB()
         {
             Settings.Profile.CompareAgainst = 3;
-            this.compareOldButton.Checked = false;
-            this.compareBestButton.Checked = false;
-            this.compareFastestButton.Checked = false;
-            this.compareSumBestButton.Checked = true;
-            this.updateDisplay();
+            compareOldButton.Checked = false;
+            compareBestButton.Checked = false;
+            compareFastestButton.Checked = false;
+            compareSumBestButton.Checked = true;
+            updateDisplay();
         }
 
         private void SwitchComparisonType()
@@ -380,9 +385,11 @@ namespace WSplitTimer
                 case 1: // Old
                     SetCompareBest();
                     break;
+
                 case 3: // Sum of Bests
                     SetCompareOld();
                     break;
+
                 default: // Fastest & Best
                     SetCompareSoB();
                     break;
@@ -392,43 +399,43 @@ namespace WSplitTimer
         private void configure(int startingPage)
         {
             // Prepares the Main and DView Windows:
-            this.clearHotkeys();
+            clearHotkeys();
 
             base.TopMost = false;
-            this.dview.TopMost = false;
-            this.modalWindowOpened = true;
+            dview.TopMost = false;
+            modalWindowOpened = true;
 
             // A few settings are necessary before calling the custom ShowDialog method
-            this.SettingsDialog.StartDelay = this.timeFormatter(((double)this.split.StartDelay) / 1000.0, TimeFormat.Seconds);
-            this.SettingsDialog.DetailedWidth = this.clockRect.Width;
+            SettingsDialog.StartDelay = timeFormatter(((double)split.StartDelay) / 1000.0, TimeFormat.Seconds);
+            SettingsDialog.DetailedWidth = clockRect.Width;
 
             // Costum ShowDialog method...
-            if (this.SettingsDialog.ShowDialog(this, startingPage) == DialogResult.OK)
+            if (SettingsDialog.ShowDialog(this, startingPage) == DialogResult.OK)
             {
-                this.SettingsDialog.ApplyChanges();
+                SettingsDialog.ApplyChanges();
 
-                this.split.StartDelay = Convert.ToInt32((double)(this.timeParse(this.SettingsDialog.StartDelay) * 1000.0));
-                this.clockRect.Width = this.SettingsDialog.DetailedWidth;
-                this.updateDetailed();
-                this.InitializeSettings();
-                this.InitializeFonts();
+                split.StartDelay = Convert.ToInt32((double)(timeParse(SettingsDialog.StartDelay) * 1000.0));
+                clockRect.Width = SettingsDialog.DetailedWidth;
+                updateDetailed();
+                InitializeSettings();
+                InitializeFonts();
             }
 
-            if (this.SettingsDialog.BackgroundSettingsChanged)
-                this.InitializeBackground();
+            if (SettingsDialog.BackgroundSettingsChanged)
+                InitializeBackground();
 
             // Some changes need to be applied live:
             base.Opacity = Settings.Profile.Opacity;
             base.TopMost = Settings.Profile.OnTop;
-            this.dview.TopMost = Settings.Profile.DViewOnTop;
+            dview.TopMost = Settings.Profile.DViewOnTop;
 
-            this.modalWindowOpened = false;
-            this.setHotkeys();
+            modalWindowOpened = false;
+            setHotkeys();
         }
 
         private void menuItemSettings_Click(object sender, EventArgs e)
         {
-            this.configure(0);
+            configure(0);
         }
 
         private Color DarkenColor(Color original, double lightness)
@@ -442,7 +449,7 @@ namespace WSplitTimer
             int displaySegs = Settings.Profile.DisplaySegs;
             if (!Settings.Profile.DisplayBlankSegs)
             {
-                displaySegs = Math.Min(this.split.Count, displaySegs);
+                displaySegs = Math.Min(split.Count, displaySegs);
             }
             return displaySegs;
         }
@@ -450,60 +457,60 @@ namespace WSplitTimer
         private void digitalClockButton_Click(object sender, EventArgs e)
         {
             Settings.Profile.DigitalClock = !Settings.Profile.DigitalClock;
-            this.digitalClockButton.Checked = Settings.Profile.DigitalClock;
-            this.painter.RequestBackgroundRedraw();
+            digitalClockButton.Checked = Settings.Profile.DigitalClock;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void displayCompact()
         {
-            this.clockRect.Location = new Point(0, 15);
-            this.clockMinimumSize = this.clockMinimumSizeAbsolute;
+            clockRect.Location = new Point(0, 15);
+            clockMinimumSize = clockMinimumSizeAbsolute;
             if (Settings.Profile.SegmentIcons > 1)
             {
-                this.clockMinimumSize.Width = (this.clockMinimumSizeAbsolute.Width + ((Settings.Profile.SegmentIcons + 1) * 8)) + 6;
+                clockMinimumSize.Width = (clockMinimumSizeAbsolute.Width + ((Settings.Profile.SegmentIcons + 1) * 8)) + 6;
             }
-            if (this.currentDispMode != DisplayMode.Compact)
+            if (currentDispMode != DisplayMode.Compact)
             {
-                this.clockRect.Size = Settings.Profile.ClockSize;
-                this.clockRect.Width += this.clockMinimumSize.Width - this.clockMinimumSizeAbsolute.Width;
+                clockRect.Size = Settings.Profile.ClockSize;
+                clockRect.Width += clockMinimumSize.Width - clockMinimumSizeAbsolute.Width;
             }
-            if ((this.clockRect.Height < this.clockMinimumSize.Height) || (this.clockRect.Width < this.clockMinimumSize.Width))
+            if ((clockRect.Height < clockMinimumSize.Height) || (clockRect.Width < clockMinimumSize.Width))
             {
-                this.clockRect.Size = this.clockMinimumSize;
+                clockRect.Size = clockMinimumSize;
             }
-            this.currentDispMode = DisplayMode.Compact;
-            base.Size = new Size(this.clockRect.Width, this.clockRect.Height + 0x1f);
+            currentDispMode = DisplayMode.Compact;
+            base.Size = new Size(clockRect.Width, clockRect.Height + 0x1f);
         }
 
         private void displayCompactButton_Click(object sender, EventArgs e)
         {
-            this.setDisplay(DisplayMode.Compact);
+            setDisplay(DisplayMode.Compact);
         }
 
         private void displayDetail()
         {
             int hh = 0;
-            this.segHeight = Math.Max(14, (Settings.Profile.SegmentIcons + 1) * 8);
-            this.clockMinimumSize = this.clockMinimumSizeAbsolute;
-            if (this.currentDispMode != DisplayMode.Detailed)
+            segHeight = Math.Max(14, (Settings.Profile.SegmentIcons + 1) * 8);
+            clockMinimumSize = clockMinimumSizeAbsolute;
+            if (currentDispMode != DisplayMode.Detailed)
             {
-                this.clockRect.Size = this.detailPreferredSize;
+                clockRect.Size = detailPreferredSize;
             }
-            if ((this.clockRect.Height < this.clockMinimumSize.Height) || (this.clockRect.Width < this.clockMinimumSize.Width))
+            if ((clockRect.Height < clockMinimumSize.Height) || (clockRect.Width < clockMinimumSize.Width))
             {
-                this.clockRect.Size = this.clockMinimumSize;
+                clockRect.Size = clockMinimumSize;
             }
-            int height = (this.clockRect.Height + (this.detailSegCount() * this.segHeight)) + 0x15;
-            if (((this.split.RunTitle != "") && Settings.Profile.ShowTitle) && ((this.split.RunGoal != "") && Settings.Profile.ShowGoal))
+            int height = (clockRect.Height + (detailSegCount() * segHeight)) + 0x15;
+            if (((split.RunTitle != "") && Settings.Profile.ShowTitle) && ((split.RunGoal != "") && Settings.Profile.ShowGoal))
             {
                 height += 0x20;
             }
-            else if ((this.split.RunTitle != "") && Settings.Profile.ShowTitle)
+            else if ((split.RunTitle != "") && Settings.Profile.ShowTitle)
             {
                 height += 0x12;
             }
-            else if ((this.split.RunGoal != "") && Settings.Profile.ShowGoal)
+            else if ((split.RunGoal != "") && Settings.Profile.ShowGoal)
             {
                 height += 0x12;
             }
@@ -514,14 +521,14 @@ namespace WSplitTimer
             if (Settings.Profile.PredPB) { hh += 18; };
             if (Settings.Profile.PredBest) { hh += 18; };
             height += hh - 18;
-            this.clockRect.Location = new Point(0, (height - this.clockRect.Height) - hh);
-            this.currentDispMode = DisplayMode.Detailed;
-            base.Size = new Size(this.clockRect.Width, height);
+            clockRect.Location = new Point(0, (height - clockRect.Height) - hh);
+            currentDispMode = DisplayMode.Detailed;
+            base.Size = new Size(clockRect.Width, height);
         }
 
         private void displayDetailedButton_Click(object sender, EventArgs e)
         {
-            this.setDisplay(DisplayMode.Detailed);
+            setDisplay(DisplayMode.Detailed);
         }
 
         private int displaySegsWide()
@@ -529,99 +536,99 @@ namespace WSplitTimer
             int wideSegs = Settings.Profile.WideSegs;
             if (!Settings.Profile.WideSegBlanks)
             {
-                wideSegs = Math.Min(this.split.Count, wideSegs);
+                wideSegs = Math.Min(split.Count, wideSegs);
             }
             return wideSegs;
         }
 
         private void displayTimer()
         {
-            this.clockRect.Location = new Point(0, 0);
-            this.clockMinimumSize = this.clockMinimumSizeAbsolute;
-            if (this.currentDispMode != DisplayMode.Timer)
+            clockRect.Location = new Point(0, 0);
+            clockMinimumSize = clockMinimumSizeAbsolute;
+            if (currentDispMode != DisplayMode.Timer)
             {
-                this.clockRect.Size = Settings.Profile.ClockSize;
+                clockRect.Size = Settings.Profile.ClockSize;
             }
-            if ((this.clockRect.Height < this.clockMinimumSize.Height) || (this.clockRect.Width < this.clockMinimumSize.Width))
+            if ((clockRect.Height < clockMinimumSize.Height) || (clockRect.Width < clockMinimumSize.Width))
             {
-                this.clockRect.Size = this.clockMinimumSize;
+                clockRect.Size = clockMinimumSize;
             }
-            this.currentDispMode = DisplayMode.Timer;
-            base.Size = this.clockRect.Size;
+            currentDispMode = DisplayMode.Timer;
+            base.Size = clockRect.Size;
         }
 
         private void displayTimerOnlyButton_Click(object sender, EventArgs e)
         {
-            this.setDisplay(DisplayMode.Timer);
+            setDisplay(DisplayMode.Timer);
         }
 
         private void displayWide()
         {
             if (Settings.Profile.SegmentIcons >= 1)
             {
-                this.wideSegWidth = this.wideSegWidthBase + ((Settings.Profile.SegmentIcons + 1) * 8);
+                wideSegWidth = wideSegWidthBase + ((Settings.Profile.SegmentIcons + 1) * 8);
             }
             else
             {
-                this.wideSegWidth = this.wideSegWidthBase;
+                wideSegWidth = wideSegWidthBase;
             }
-            this.clockMinimumSize.Width = this.clockMinimumSizeAbsolute.Width;
+            clockMinimumSize.Width = clockMinimumSizeAbsolute.Width;
             if (Settings.Profile.SegmentIcons == 3)
             {
-                this.clockMinimumSize.Height = 0x20;
+                clockMinimumSize.Height = 0x20;
             }
             else
             {
-                this.clockMinimumSize.Height = Settings.Profile.WideHeight; // make this changeable //
+                clockMinimumSize.Height = Settings.Profile.WideHeight; // make this changeable //
             }
-            this.clockRect.Location = new Point(0, 0);
-            if (((this.currentDispMode != DisplayMode.Wide) || (this.clockRect.Height != this.clockMinimumSize.Height)) || (this.clockRect.Width < this.clockMinimumSize.Width))
+            clockRect.Location = new Point(0, 0);
+            if (((currentDispMode != DisplayMode.Wide) || (clockRect.Height != clockMinimumSize.Height)) || (clockRect.Width < clockMinimumSize.Width))
             {
-                this.clockRect.Size = this.clockMinimumSize;
+                clockRect.Size = clockMinimumSize;
             }
-            this.currentDispMode = DisplayMode.Wide;
-            base.Size = new Size((this.clockRect.Width + 124) + (this.displaySegsWide() * this.wideSegWidth), this.clockRect.Height);
+            currentDispMode = DisplayMode.Wide;
+            base.Size = new Size((clockRect.Width + 124) + (displaySegsWide() * wideSegWidth), clockRect.Height);
         }
 
         private void displayWideButton_Click(object sender, EventArgs e)
         {
-            this.setDisplay(DisplayMode.Wide);
+            setDisplay(DisplayMode.Wide);
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (this.components != null))
+            if (disposing && (components != null))
             {
-                this.components.Dispose();
+                components.Dispose();
             }
             base.Dispose(disposing);
         }
 
         private void doSplit()
         {
-            double time = Math.Truncate(this.timer.Elapsed.TotalSeconds * 100) / 100;
-            this.split.DoSplit(time);
-            if (!this.split.Done)
+            double time = Math.Truncate(timer.Elapsed.TotalSeconds * 100) / 100;
+            split.DoSplit(time);
+            if (!split.Done)
             {
-                this.flashClock();
+                flashClock();
             }
             else
             {
-                this.stopwatch.Enabled = false;
-                this.newOldButton.Enabled = true;
+                stopwatch.Enabled = false;
+                newOldButton.Enabled = true;
             }
-            this.updateDisplay();
+            updateDisplay();
         }
 
         private void doubleTapDelay_Tick(object sender, EventArgs e)
         {
-            this.doubleTapDelay.Dispose();
-            this.doubleTapDelay = null;
+            doubleTapDelay.Dispose();
+            doubleTapDelay = null;
         }
 
         private void exitButton_Click(object sender, EventArgs e)
         {
-            if (this.promptForSave())
+            if (promptForSave())
             {
                 base.Close();
             }
@@ -686,334 +693,334 @@ namespace WSplitTimer
 
         private void InitializeComponent()
         {
-            this.components = new Container();
-            this.timerMenu = new ContextMenuStrip(this.components);
-            this.newButton = new ToolStripMenuItem();
-            this.openButton = new ToolStripMenuItem();
-            this.openRecent = new ToolStripMenuItem();
-            this.saveButton = new ToolStripMenuItem();
-            this.saveAsButton = new ToolStripMenuItem();
-            this.reloadButton = new ToolStripMenuItem();
-            this.closeButton = new ToolStripMenuItem();
-            this.toolStripSeparator2 = new ToolStripSeparator();
-            this.resetButton = new ToolStripMenuItem();
-            this.stopButton = new ToolStripMenuItem();
-            this.newOldButton = new ToolStripMenuItem();
-            this.toolStripSeparator1 = new ToolStripSeparator();
-            this.menuItemSettings = new ToolStripMenuItem();
-            this.displaySettingsMenu = new ToolStripMenuItem();
-            this.alwaysOnTop = new ToolStripMenuItem();
-            this.showRunTitleButton = new ToolStripMenuItem();
-            this.showAttemptCount = new ToolStripMenuItem();
-            this.showRunGoalMenuItem = new ToolStripMenuItem();
-            this.toolStripSeparator3 = new ToolStripSeparator();
-            this.displayTimerOnlyButton = new ToolStripMenuItem();
-            this.displayCompactButton = new ToolStripMenuItem();
-            this.displayWideButton = new ToolStripMenuItem();
-            this.displayDetailedButton = new ToolStripMenuItem();
-            this.toolStripSeparator5 = new ToolStripSeparator();
-            this.clockAppearanceToolStripMenuItem = new ToolStripMenuItem();
-            this.showDecimalSeparator = new ToolStripMenuItem();
-            this.digitalClockButton = new ToolStripMenuItem();
-            this.clockAccent = new ToolStripMenuItem();
-            this.plainBg = new ToolStripMenuItem();
-            this.blackBg = new ToolStripMenuItem();
-            this.menuItemAdvancedDisplay = new ToolStripMenuItem();
-            this.setColorsButton = new ToolStripMenuItem();
-            this.toolStripSeparator6 = new ToolStripSeparator();
-            this.advancedDetailButton = new ToolStripMenuItem();
-            this.compareMenu = new ToolStripMenuItem();
-            this.compareOldButton = new ToolStripMenuItem();
-            this.compareBestButton = new ToolStripMenuItem();
-            this.compareSumBestButton = new ToolStripMenuItem();
-            this.compareFastestButton = new ToolStripMenuItem();
-            this.trackBestMenu = new ToolStripMenuItem();
-            this.bestAsOverallButton = new ToolStripMenuItem();
-            this.bestAsSplitsButton = new ToolStripMenuItem();
-            this.toolStripSeparator4 = new ToolStripSeparator();
-            this.aboutButton = new ToolStripMenuItem();
-            this.exitButton = new ToolStripMenuItem();
-            this.stopwatch = new Timer(this.components);
-            this.openFileDialog = new OpenFileDialog();
-            this.saveFileDialog = new SaveFileDialog();
-            this.menuItemStartAt = new ToolStripMenuItem();
-            this.layoutMenu = new ToolStripMenuItem();
-            this.prevsegButton = new ToolStripMenuItem();
-            this.timesaveButton = new ToolStripMenuItem();
-            this.sobButton = new ToolStripMenuItem();
-            this.predpbButton = new ToolStripMenuItem();
-            this.predbestButton = new ToolStripMenuItem();
-            this.gradientMenu = new ToolStripMenuItem();
-            this.horiButton = new ToolStripMenuItem();
-            this.vertButton = new ToolStripMenuItem();
+            components = new Container();
+            timerMenu = new ContextMenuStrip(components);
+            newButton = new ToolStripMenuItem();
+            openButton = new ToolStripMenuItem();
+            openRecent = new ToolStripMenuItem();
+            saveButton = new ToolStripMenuItem();
+            saveAsButton = new ToolStripMenuItem();
+            reloadButton = new ToolStripMenuItem();
+            closeButton = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            resetButton = new ToolStripMenuItem();
+            stopButton = new ToolStripMenuItem();
+            newOldButton = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            menuItemSettings = new ToolStripMenuItem();
+            displaySettingsMenu = new ToolStripMenuItem();
+            alwaysOnTop = new ToolStripMenuItem();
+            showRunTitleButton = new ToolStripMenuItem();
+            showAttemptCount = new ToolStripMenuItem();
+            showRunGoalMenuItem = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            displayTimerOnlyButton = new ToolStripMenuItem();
+            displayCompactButton = new ToolStripMenuItem();
+            displayWideButton = new ToolStripMenuItem();
+            displayDetailedButton = new ToolStripMenuItem();
+            toolStripSeparator5 = new ToolStripSeparator();
+            clockAppearanceToolStripMenuItem = new ToolStripMenuItem();
+            showDecimalSeparator = new ToolStripMenuItem();
+            digitalClockButton = new ToolStripMenuItem();
+            clockAccent = new ToolStripMenuItem();
+            plainBg = new ToolStripMenuItem();
+            blackBg = new ToolStripMenuItem();
+            menuItemAdvancedDisplay = new ToolStripMenuItem();
+            setColorsButton = new ToolStripMenuItem();
+            toolStripSeparator6 = new ToolStripSeparator();
+            advancedDetailButton = new ToolStripMenuItem();
+            compareMenu = new ToolStripMenuItem();
+            compareOldButton = new ToolStripMenuItem();
+            compareBestButton = new ToolStripMenuItem();
+            compareSumBestButton = new ToolStripMenuItem();
+            compareFastestButton = new ToolStripMenuItem();
+            trackBestMenu = new ToolStripMenuItem();
+            bestAsOverallButton = new ToolStripMenuItem();
+            bestAsSplitsButton = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            aboutButton = new ToolStripMenuItem();
+            exitButton = new ToolStripMenuItem();
+            stopwatch = new Timer(components);
+            openFileDialog = new OpenFileDialog();
+            saveFileDialog = new SaveFileDialog();
+            menuItemStartAt = new ToolStripMenuItem();
+            layoutMenu = new ToolStripMenuItem();
+            prevsegButton = new ToolStripMenuItem();
+            timesaveButton = new ToolStripMenuItem();
+            sobButton = new ToolStripMenuItem();
+            predpbButton = new ToolStripMenuItem();
+            predbestButton = new ToolStripMenuItem();
+            gradientMenu = new ToolStripMenuItem();
+            horiButton = new ToolStripMenuItem();
+            vertButton = new ToolStripMenuItem();
 
-            this.timerMenu.SuspendLayout();
+            timerMenu.SuspendLayout();
             base.SuspendLayout();
-            this.timerMenu.Items.AddRange(new ToolStripItem[] { 
-                this.newButton, this.openButton, this.openRecent, this.saveButton, this.saveAsButton, this.reloadButton, this.closeButton, this.toolStripSeparator2, this.menuItemStartAt, this.resetButton, this.stopButton, this.newOldButton, this.toolStripSeparator1, this.menuItemSettings, this.displaySettingsMenu, this.compareMenu, this.trackBestMenu, this.layoutMenu, this.gradientMenu,
-                this.toolStripSeparator4, this.aboutButton, this.exitButton
+            timerMenu.Items.AddRange(new ToolStripItem[] {
+                newButton, openButton, openRecent, saveButton, saveAsButton, reloadButton, closeButton, toolStripSeparator2, menuItemStartAt, resetButton, stopButton, newOldButton, toolStripSeparator1, menuItemSettings, displaySettingsMenu, compareMenu, trackBestMenu, layoutMenu, gradientMenu,
+                toolStripSeparator4, aboutButton, exitButton
              });
-            this.timerMenu.Name = "timerMenu";
-            this.timerMenu.Size = new Size(0xae, 0x18c);
-            this.newButton.Name = "newButton";
-            this.newButton.Size = new Size(0xad, 0x16);
-            this.newButton.Text = "New/Edit";
-            this.newButton.Click += new EventHandler(this.newButton_Click);
-            this.openButton.Name = "openButton";
-            this.openButton.Size = new Size(0xad, 0x16);
-            this.openButton.Text = "Open...";
-            this.openButton.Click += new EventHandler(this.openButton_Click);
-            this.openRecent.Name = "openRecent";
-            this.openRecent.Size = new Size(0xad, 0x16);
-            this.openRecent.Text = "Open recent...";
-            this.saveButton.Enabled = false;
-            this.saveButton.Name = "saveButton";
-            this.saveButton.Size = new Size(0xad, 0x16);
-            this.saveButton.Text = "Save";
-            this.saveButton.Click += new EventHandler(this.saveButton_Click);
-            this.saveAsButton.Enabled = false;
-            this.saveAsButton.Name = "saveAsButton";
-            this.saveAsButton.Size = new Size(0xad, 0x16);
-            this.saveAsButton.Text = "Save as...";
-            this.saveAsButton.Click += new EventHandler(this.saveAsButton_Click);
-            this.reloadButton.Enabled = false;
-            this.reloadButton.Name = "reloadButton";
-            this.reloadButton.Size = new Size(0xad, 0x16);
-            this.reloadButton.Text = "Reload";
-            this.reloadButton.Click += new EventHandler(this.reloadButton_Click);
-            this.closeButton.Enabled = false;
-            this.closeButton.Name = "closeButton";
-            this.closeButton.Size = new Size(0xad, 0x16);
-            this.closeButton.Text = "Close";
-            this.closeButton.Click += new EventHandler(this.closeButton_Click);
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new Size(170, 6);
-            this.menuItemStartAt.Name = "menuItemStartAt";
-            this.menuItemStartAt.Size = new Size(0xad, 0x16);
-            this.menuItemStartAt.Text = "Start at...";
-            this.menuItemStartAt.Click += new EventHandler(this.menuItemStartAt_Click);
-            this.resetButton.Name = "resetButton";
-            this.resetButton.Size = new Size(0xad, 0x16);
-            this.resetButton.Text = "Reset";
-            this.resetButton.Click += new EventHandler(this.resetButton_Click);
-            this.stopButton.Name = "stopButton";
-            this.stopButton.Size = new Size(0xad, 0x16);
-            this.stopButton.Text = "Stop";
-            this.stopButton.Click += new EventHandler(this.stopButton_Click);
-            this.newOldButton.Enabled = false;
-            this.newOldButton.Name = "newOldButton";
-            this.newOldButton.Size = new Size(0xad, 0x16);
-            this.newOldButton.Text = "Set this run as old";
-            this.newOldButton.Click += new EventHandler(this.newOldButton_Click);
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new Size(170, 6);
-            this.menuItemSettings.Name = "menuItemSettings";
-            this.menuItemSettings.Size = new Size(0xad, 0x16);
-            this.menuItemSettings.Text = "Settings...";
-            this.menuItemSettings.Click += new EventHandler(this.menuItemSettings_Click);
-            this.displaySettingsMenu.DropDownItems.AddRange(new ToolStripItem[] { 
-                this.alwaysOnTop, this.showRunTitleButton, this.showAttemptCount, this.showRunGoalMenuItem, this.toolStripSeparator3, this.displayTimerOnlyButton, this.displayCompactButton, this.displayWideButton, this.displayDetailedButton, this.toolStripSeparator5, this.clockAppearanceToolStripMenuItem, this.plainBg, this.blackBg, this.menuItemAdvancedDisplay, this.setColorsButton, this.toolStripSeparator6, 
-                this.advancedDetailButton
+            timerMenu.Name = "timerMenu";
+            timerMenu.Size = new Size(0xae, 0x18c);
+            newButton.Name = "newButton";
+            newButton.Size = new Size(0xad, 0x16);
+            newButton.Text = "New/Edit";
+            newButton.Click += new EventHandler(NewButton_Click);
+            openButton.Name = "openButton";
+            openButton.Size = new Size(0xad, 0x16);
+            openButton.Text = "Open...";
+            openButton.Click += new EventHandler(openButton_Click);
+            openRecent.Name = "openRecent";
+            openRecent.Size = new Size(0xad, 0x16);
+            openRecent.Text = "Open recent...";
+            saveButton.Enabled = false;
+            saveButton.Name = "saveButton";
+            saveButton.Size = new Size(0xad, 0x16);
+            saveButton.Text = "Save";
+            saveButton.Click += new EventHandler(saveButton_Click);
+            saveAsButton.Enabled = false;
+            saveAsButton.Name = "saveAsButton";
+            saveAsButton.Size = new Size(0xad, 0x16);
+            saveAsButton.Text = "Save as...";
+            saveAsButton.Click += new EventHandler(saveAsButton_Click);
+            reloadButton.Enabled = false;
+            reloadButton.Name = "reloadButton";
+            reloadButton.Size = new Size(0xad, 0x16);
+            reloadButton.Text = "Reload";
+            reloadButton.Click += new EventHandler(reloadButton_Click);
+            closeButton.Enabled = false;
+            closeButton.Name = "closeButton";
+            closeButton.Size = new Size(0xad, 0x16);
+            closeButton.Text = "Close";
+            closeButton.Click += new EventHandler(closeButton_Click);
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(170, 6);
+            menuItemStartAt.Name = "menuItemStartAt";
+            menuItemStartAt.Size = new Size(0xad, 0x16);
+            menuItemStartAt.Text = "Start at...";
+            menuItemStartAt.Click += new EventHandler(menuItemStartAt_Click);
+            resetButton.Name = "resetButton";
+            resetButton.Size = new Size(0xad, 0x16);
+            resetButton.Text = "Reset";
+            resetButton.Click += new EventHandler(resetButton_Click);
+            stopButton.Name = "stopButton";
+            stopButton.Size = new Size(0xad, 0x16);
+            stopButton.Text = "Stop";
+            stopButton.Click += new EventHandler(stopButton_Click);
+            newOldButton.Enabled = false;
+            newOldButton.Name = "newOldButton";
+            newOldButton.Size = new Size(0xad, 0x16);
+            newOldButton.Text = "Set this run as old";
+            newOldButton.Click += new EventHandler(NewOldButton_Click);
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(170, 6);
+            menuItemSettings.Name = "menuItemSettings";
+            menuItemSettings.Size = new Size(0xad, 0x16);
+            menuItemSettings.Text = "Settings...";
+            menuItemSettings.Click += new EventHandler(menuItemSettings_Click);
+            displaySettingsMenu.DropDownItems.AddRange(new ToolStripItem[] {
+                alwaysOnTop, showRunTitleButton, showAttemptCount, showRunGoalMenuItem, toolStripSeparator3, displayTimerOnlyButton, displayCompactButton, displayWideButton, displayDetailedButton, toolStripSeparator5, clockAppearanceToolStripMenuItem, plainBg, blackBg, menuItemAdvancedDisplay, setColorsButton, toolStripSeparator6,
+                advancedDetailButton
              });
-            this.displaySettingsMenu.Name = "displaySettingsMenu";
-            this.displaySettingsMenu.Size = new Size(0xad, 0x16);
-            this.displaySettingsMenu.Text = "Display settings";
-            this.alwaysOnTop.Name = "alwaysOnTop";
-            this.alwaysOnTop.Size = new Size(0xcc, 0x16);
-            this.alwaysOnTop.Text = "Always on top";
-            this.alwaysOnTop.Click += new EventHandler(this.alwaysOnTop_Click);
-            this.showRunTitleButton.Name = "showRunTitleButton";
-            this.showRunTitleButton.Size = new Size(0xcc, 0x16);
-            this.showRunTitleButton.Text = "Show run title";
-            this.showRunTitleButton.Click += new EventHandler(this.showRunTitleButton_Click);
-            this.showAttemptCount.Name = "showAttemptCount";
-            this.showAttemptCount.Size = new Size(0xcc, 0x16);
-            this.showAttemptCount.Text = "Show attempt count";
-            this.showAttemptCount.Click += new EventHandler(this.showAttemptCount_Click);
-            this.showRunGoalMenuItem.Name = "showRunGoal";
-            this.showRunGoalMenuItem.Size = new Size(0xcc, 0x16);
-            this.showRunGoalMenuItem.Text = "Show run goal";
-            this.showRunGoalMenuItem.Click += new EventHandler(this.showRunGoal_Click);
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new Size(0xc9, 6);
-            this.displayTimerOnlyButton.Name = "displayTimerOnlyButton";
-            this.displayTimerOnlyButton.Size = new Size(0xcc, 0x16);
-            this.displayTimerOnlyButton.Text = "Timer only";
-            this.displayTimerOnlyButton.Click += new EventHandler(this.displayTimerOnlyButton_Click);
-            this.displayCompactButton.Name = "displayCompactButton";
-            this.displayCompactButton.Size = new Size(0xcc, 0x16);
-            this.displayCompactButton.Text = "Compact";
-            this.displayCompactButton.Click += new EventHandler(this.displayCompactButton_Click);
-            this.displayWideButton.Name = "displayWideButton";
-            this.displayWideButton.Size = new Size(0xcc, 0x16);
-            this.displayWideButton.Text = "Wide";
-            this.displayWideButton.Click += new EventHandler(this.displayWideButton_Click);
-            this.displayDetailedButton.Name = "displayDetailedButton";
-            this.displayDetailedButton.Size = new Size(0xcc, 0x16);
-            this.displayDetailedButton.Text = "Detailed";
-            this.displayDetailedButton.Click += new EventHandler(this.displayDetailedButton_Click);
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new Size(0xc9, 6);
-            this.clockAppearanceToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { this.showDecimalSeparator, this.digitalClockButton, this.clockAccent });
-            this.clockAppearanceToolStripMenuItem.Name = "clockAppearanceToolStripMenuItem";
-            this.clockAppearanceToolStripMenuItem.Size = new Size(0xcc, 0x16);
-            this.clockAppearanceToolStripMenuItem.Text = "Clock appearance";
-            this.showDecimalSeparator.Name = "showDecimalSeparator";
-            this.showDecimalSeparator.Size = new Size(0xd0, 0x16);
-            this.showDecimalSeparator.Text = "Show decimal separator";
-            this.showDecimalSeparator.Click += new EventHandler(this.showDecimalSeparator_Click);
-            this.digitalClockButton.Name = "digitalClockButton";
-            this.digitalClockButton.Size = new Size(0xd0, 0x16);
-            this.digitalClockButton.Text = "Digital clock font";
-            this.digitalClockButton.Click += new EventHandler(this.digitalClockButton_Click);
-            this.clockAccent.Name = "clockAccent";
-            this.clockAccent.Size = new Size(0xd0, 0x16);
-            this.clockAccent.Text = "Accent on vertical modes";
-            this.clockAccent.Click += new EventHandler(this.clockAccent_Click);
-            this.plainBg.Name = "plainBg";
-            this.plainBg.Size = new Size(0xcc, 0x16);
-            this.plainBg.Text = "Plain background";
-            this.plainBg.Click += new EventHandler(this.plainBg_Click);
-            this.blackBg.Name = "blackBg";
-            this.blackBg.Size = new Size(0xcc, 0x16);
-            this.blackBg.Text = "Black background";
-            this.blackBg.Click += new EventHandler(this.blackBg_Click);
-            this.menuItemAdvancedDisplay.Name = "menuItemAdvancedDisplay";
-            this.menuItemAdvancedDisplay.Size = new Size(0xcc, 0x16);
-            this.menuItemAdvancedDisplay.Text = "Advanced...";
-            this.menuItemAdvancedDisplay.Click += new EventHandler(this.menuItemAdvancedDisplay_Click);
-            this.setColorsButton.Name = "setColorsButton";
-            this.setColorsButton.Size = new Size(0xcc, 0x16);
-            this.setColorsButton.Text = "Set colors...";
-            this.setColorsButton.Click += new EventHandler(this.setColorsButton_Click);
-            this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new Size(0xc9, 6);
-            this.advancedDetailButton.CheckOnClick = true;
-            this.advancedDetailButton.Name = "advancedDetailButton";
-            this.advancedDetailButton.Size = new Size(0xcc, 0x16);
-            this.advancedDetailButton.Text = "Advanced detail window";
-            this.advancedDetailButton.Click += new EventHandler(this.advancedDetailButton_Click);
-            this.compareMenu.DropDownItems.AddRange(new ToolStripItem[] { this.compareOldButton, this.compareBestButton, this.compareFastestButton, this.compareSumBestButton });
-            this.compareMenu.Name = "compareMenu";
-            this.compareMenu.Size = new Size(0xad, 0x16);
-            this.compareMenu.Text = "Compare against...";
-            this.compareOldButton.Name = "compareOldButton";
-            this.compareOldButton.Size = new Size(0x90, 0x16);
-            this.compareOldButton.Text = "Old run";
-            this.compareOldButton.Click += new EventHandler(this.compareOldButton_Click);
-            this.compareBestButton.Name = "compareBestButton";
-            this.compareBestButton.Size = new Size(0x90, 0x16);
-            this.compareBestButton.Text = "Personal best";
-            this.compareBestButton.Click += new EventHandler(this.compareBestButton_Click);
-            this.compareFastestButton.Name = "compareFastestButton";
-            this.compareFastestButton.Size = new Size(0x90, 0x16);
-            this.compareFastestButton.Text = "Fastest";
-            this.compareFastestButton.Click += new EventHandler(this.compareFastestButton_Click);
-            this.compareSumBestButton.Name = "compareSumBestButton";
-            this.compareSumBestButton.Size = new Size(0x90, 0x16);
-            this.compareSumBestButton.Text = "Sum of best segments";
-            this.compareSumBestButton.Click += new EventHandler(this.compareSumBestButton_Click);
-            this.trackBestMenu.DropDownItems.AddRange(new ToolStripItem[] { this.bestAsOverallButton, this.bestAsSplitsButton });
-            this.trackBestMenu.Name = "trackBestMenu";
-            this.trackBestMenu.Size = new Size(0xad, 0x16);
-            this.trackBestMenu.Text = "Track best as...";
-            this.bestAsOverallButton.Name = "bestAsOverallButton";
-            this.bestAsOverallButton.Size = new Size(0xb1, 0x16);
-            this.bestAsOverallButton.Text = "Fastest overall run";
-            this.bestAsOverallButton.Click += new EventHandler(this.bestAsOverallButton_Click);
-            this.bestAsSplitsButton.Name = "bestAsSplitsButton";
-            this.bestAsSplitsButton.Size = new Size(0xb1, 0x16);
-            this.bestAsSplitsButton.Text = "Fastest to each split";
-            this.bestAsSplitsButton.Click += new EventHandler(this.bestAsSplitsButton_Click);
+            displaySettingsMenu.Name = "displaySettingsMenu";
+            displaySettingsMenu.Size = new Size(0xad, 0x16);
+            displaySettingsMenu.Text = "Display settings";
+            alwaysOnTop.Name = "alwaysOnTop";
+            alwaysOnTop.Size = new Size(0xcc, 0x16);
+            alwaysOnTop.Text = "Always on top";
+            alwaysOnTop.Click += new EventHandler(alwaysOnTop_Click);
+            showRunTitleButton.Name = "showRunTitleButton";
+            showRunTitleButton.Size = new Size(0xcc, 0x16);
+            showRunTitleButton.Text = "Show run title";
+            showRunTitleButton.Click += new EventHandler(showRunTitleButton_Click);
+            showAttemptCount.Name = "showAttemptCount";
+            showAttemptCount.Size = new Size(0xcc, 0x16);
+            showAttemptCount.Text = "Show attempt count";
+            showAttemptCount.Click += new EventHandler(showAttemptCount_Click);
+            showRunGoalMenuItem.Name = "showRunGoal";
+            showRunGoalMenuItem.Size = new Size(0xcc, 0x16);
+            showRunGoalMenuItem.Text = "Show run goal";
+            showRunGoalMenuItem.Click += new EventHandler(showRunGoal_Click);
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(0xc9, 6);
+            displayTimerOnlyButton.Name = "displayTimerOnlyButton";
+            displayTimerOnlyButton.Size = new Size(0xcc, 0x16);
+            displayTimerOnlyButton.Text = "Timer only";
+            displayTimerOnlyButton.Click += new EventHandler(displayTimerOnlyButton_Click);
+            displayCompactButton.Name = "displayCompactButton";
+            displayCompactButton.Size = new Size(0xcc, 0x16);
+            displayCompactButton.Text = "Compact";
+            displayCompactButton.Click += new EventHandler(displayCompactButton_Click);
+            displayWideButton.Name = "displayWideButton";
+            displayWideButton.Size = new Size(0xcc, 0x16);
+            displayWideButton.Text = "Wide";
+            displayWideButton.Click += new EventHandler(displayWideButton_Click);
+            displayDetailedButton.Name = "displayDetailedButton";
+            displayDetailedButton.Size = new Size(0xcc, 0x16);
+            displayDetailedButton.Text = "Detailed";
+            displayDetailedButton.Click += new EventHandler(displayDetailedButton_Click);
+            toolStripSeparator5.Name = "toolStripSeparator5";
+            toolStripSeparator5.Size = new Size(0xc9, 6);
+            clockAppearanceToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { showDecimalSeparator, digitalClockButton, clockAccent });
+            clockAppearanceToolStripMenuItem.Name = "clockAppearanceToolStripMenuItem";
+            clockAppearanceToolStripMenuItem.Size = new Size(0xcc, 0x16);
+            clockAppearanceToolStripMenuItem.Text = "Clock appearance";
+            showDecimalSeparator.Name = "showDecimalSeparator";
+            showDecimalSeparator.Size = new Size(0xd0, 0x16);
+            showDecimalSeparator.Text = "Show decimal separator";
+            showDecimalSeparator.Click += new EventHandler(showDecimalSeparator_Click);
+            digitalClockButton.Name = "digitalClockButton";
+            digitalClockButton.Size = new Size(0xd0, 0x16);
+            digitalClockButton.Text = "Digital clock font";
+            digitalClockButton.Click += new EventHandler(digitalClockButton_Click);
+            clockAccent.Name = "clockAccent";
+            clockAccent.Size = new Size(0xd0, 0x16);
+            clockAccent.Text = "Accent on vertical modes";
+            clockAccent.Click += new EventHandler(clockAccent_Click);
+            plainBg.Name = "plainBg";
+            plainBg.Size = new Size(0xcc, 0x16);
+            plainBg.Text = "Plain background";
+            plainBg.Click += new EventHandler(plainBg_Click);
+            blackBg.Name = "blackBg";
+            blackBg.Size = new Size(0xcc, 0x16);
+            blackBg.Text = "Black background";
+            blackBg.Click += new EventHandler(blackBg_Click);
+            menuItemAdvancedDisplay.Name = "menuItemAdvancedDisplay";
+            menuItemAdvancedDisplay.Size = new Size(0xcc, 0x16);
+            menuItemAdvancedDisplay.Text = "Advanced...";
+            menuItemAdvancedDisplay.Click += new EventHandler(MenuItemAdvancedDisplay_Click);
+            setColorsButton.Name = "setColorsButton";
+            setColorsButton.Size = new Size(0xcc, 0x16);
+            setColorsButton.Text = "Set colors...";
+            setColorsButton.Click += new EventHandler(setColorsButton_Click);
+            toolStripSeparator6.Name = "toolStripSeparator6";
+            toolStripSeparator6.Size = new Size(0xc9, 6);
+            advancedDetailButton.CheckOnClick = true;
+            advancedDetailButton.Name = "advancedDetailButton";
+            advancedDetailButton.Size = new Size(0xcc, 0x16);
+            advancedDetailButton.Text = "Advanced detail window";
+            advancedDetailButton.Click += new EventHandler(advancedDetailButton_Click);
+            compareMenu.DropDownItems.AddRange(new ToolStripItem[] { compareOldButton, compareBestButton, compareFastestButton, compareSumBestButton });
+            compareMenu.Name = "compareMenu";
+            compareMenu.Size = new Size(0xad, 0x16);
+            compareMenu.Text = "Compare against...";
+            compareOldButton.Name = "compareOldButton";
+            compareOldButton.Size = new Size(0x90, 0x16);
+            compareOldButton.Text = "Old run";
+            compareOldButton.Click += new EventHandler(compareOldButton_Click);
+            compareBestButton.Name = "compareBestButton";
+            compareBestButton.Size = new Size(0x90, 0x16);
+            compareBestButton.Text = "Personal best";
+            compareBestButton.Click += new EventHandler(compareBestButton_Click);
+            compareFastestButton.Name = "compareFastestButton";
+            compareFastestButton.Size = new Size(0x90, 0x16);
+            compareFastestButton.Text = "Fastest";
+            compareFastestButton.Click += new EventHandler(compareFastestButton_Click);
+            compareSumBestButton.Name = "compareSumBestButton";
+            compareSumBestButton.Size = new Size(0x90, 0x16);
+            compareSumBestButton.Text = "Sum of best segments";
+            compareSumBestButton.Click += new EventHandler(compareSumBestButton_Click);
+            trackBestMenu.DropDownItems.AddRange(new ToolStripItem[] { bestAsOverallButton, bestAsSplitsButton });
+            trackBestMenu.Name = "trackBestMenu";
+            trackBestMenu.Size = new Size(0xad, 0x16);
+            trackBestMenu.Text = "Track best as...";
+            bestAsOverallButton.Name = "bestAsOverallButton";
+            bestAsOverallButton.Size = new Size(0xb1, 0x16);
+            bestAsOverallButton.Text = "Fastest overall run";
+            bestAsOverallButton.Click += new EventHandler(bestAsOverallButton_Click);
+            bestAsSplitsButton.Name = "bestAsSplitsButton";
+            bestAsSplitsButton.Size = new Size(0xb1, 0x16);
+            bestAsSplitsButton.Text = "Fastest to each split";
+            bestAsSplitsButton.Click += new EventHandler(bestAsSplitsButton_Click);
             // layout
-            this.layoutMenu.DropDownItems.AddRange(new ToolStripItem[] { this.prevsegButton, this.timesaveButton, this.sobButton, this.predpbButton, this.predbestButton });
-            this.layoutMenu.Name = "layoutMenu";
-            this.layoutMenu.Size = new Size(0xad, 0x16);
-            this.layoutMenu.Text = "Layout (detailed only)...";
-            this.prevsegButton.Name = "prevsegButton";
-            this.prevsegButton.Size = new Size(0xb1, 0x16);
-            this.prevsegButton.Text = "Previous Segment";
-            this.prevsegButton.Click += new EventHandler(this.prevsegButton_Click);
+            layoutMenu.DropDownItems.AddRange(new ToolStripItem[] { prevsegButton, timesaveButton, sobButton, predpbButton, predbestButton });
+            layoutMenu.Name = "layoutMenu";
+            layoutMenu.Size = new Size(0xad, 0x16);
+            layoutMenu.Text = "Layout (detailed only)...";
+            prevsegButton.Name = "prevsegButton";
+            prevsegButton.Size = new Size(0xb1, 0x16);
+            prevsegButton.Text = "Previous Segment";
+            prevsegButton.Click += new EventHandler(prevsegButton_Click);
             //this.prevsegButton.Enabled = false;
-            this.timesaveButton.Name = "timesaveButton";
-            this.timesaveButton.Size = new Size(0xb1, 0x16);
-            this.timesaveButton.Text = "Possible Time Save";
-            this.timesaveButton.Click += new EventHandler(this.timesaveButton_Click);
-            this.sobButton.Name = "sobButton";
-            this.sobButton.Size = new Size(0xb1, 0x16);
-            this.sobButton.Text = "Sum of Best Segments";
-            this.sobButton.Click += new EventHandler(this.sobButton_Click);
-            this.predpbButton.Name = "predpbButton";
-            this.predpbButton.Size = new Size(0xb1, 0x16);
-            this.predpbButton.Text = "Predicted Time (PB)";
-            this.predpbButton.Click += new EventHandler(this.predpbButton_Click);
-            this.predbestButton.Name = "predbestButton";
-            this.predbestButton.Size = new Size(0xb1, 0x16);
-            this.predbestButton.Text = "Predicted Time (Best)";
-            this.predbestButton.Click += new EventHandler(this.predbestButton_Click);
+            timesaveButton.Name = "timesaveButton";
+            timesaveButton.Size = new Size(0xb1, 0x16);
+            timesaveButton.Text = "Possible Time Save";
+            timesaveButton.Click += new EventHandler(timesaveButton_Click);
+            sobButton.Name = "sobButton";
+            sobButton.Size = new Size(0xb1, 0x16);
+            sobButton.Text = "Sum of Best Segments";
+            sobButton.Click += new EventHandler(sobButton_Click);
+            predpbButton.Name = "predpbButton";
+            predpbButton.Size = new Size(0xb1, 0x16);
+            predpbButton.Text = "Predicted Time (PB)";
+            predpbButton.Click += new EventHandler(predpbButton_Click);
+            predbestButton.Name = "predbestButton";
+            predbestButton.Size = new Size(0xb1, 0x16);
+            predbestButton.Text = "Predicted Time (Best)";
+            predbestButton.Click += new EventHandler(predbestButton_Click);
             // ye
-            this.gradientMenu.DropDownItems.AddRange(new ToolStripItem[] { this.horiButton, this.vertButton });
-            this.gradientMenu.Name = "gradientMenu";
-            this.gradientMenu.Size = new Size(0xad, 0x16);
-            this.gradientMenu.Text = "Gradients...";
-            this.horiButton.Name = "horiButton";
-            this.horiButton.Size = new Size(0xb1, 0x16);
-            this.horiButton.Text = "Horizontal";
-            this.horiButton.Click += new EventHandler(horiButton_Click);
-            this.vertButton.Name = "vertButton";
-            this.vertButton.Size = new Size(0xb1, 0x16);
-            this.vertButton.Text = "Vertical";
-            this.vertButton.Click += new EventHandler(vertButton_Click);
+            gradientMenu.DropDownItems.AddRange(new ToolStripItem[] { horiButton, vertButton });
+            gradientMenu.Name = "gradientMenu";
+            gradientMenu.Size = new Size(0xad, 0x16);
+            gradientMenu.Text = "Gradients...";
+            horiButton.Name = "horiButton";
+            horiButton.Size = new Size(0xb1, 0x16);
+            horiButton.Text = "Horizontal";
+            horiButton.Click += new EventHandler(horiButton_Click);
+            vertButton.Name = "vertButton";
+            vertButton.Size = new Size(0xb1, 0x16);
+            vertButton.Text = "Vertical";
+            vertButton.Click += new EventHandler(vertButton_Click);
             // more
-            this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new Size(170, 6);
-            this.aboutButton.Name = "aboutButton";
-            this.aboutButton.Size = new Size(0xad, 0x16);
-            this.aboutButton.Text = "About";
-            this.aboutButton.Click += new EventHandler(this.aboutButton_Click);
-            this.exitButton.Name = "exitButton";
-            this.exitButton.Size = new Size(0xad, 0x16);
-            this.exitButton.Text = "Exit";
-            this.exitButton.Click += new EventHandler(this.exitButton_Click);
-            this.stopwatch.Interval = 15;
-            this.stopwatch.Tick += new EventHandler(this.stopwatch_Tick);
-            this.AllowDrop = true;
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(170, 6);
+            aboutButton.Name = "aboutButton";
+            aboutButton.Size = new Size(0xad, 0x16);
+            aboutButton.Text = "About";
+            aboutButton.Click += new EventHandler(aboutButton_Click);
+            exitButton.Name = "exitButton";
+            exitButton.Size = new Size(0xad, 0x16);
+            exitButton.Text = "Exit";
+            exitButton.Click += new EventHandler(exitButton_Click);
+            stopwatch.Interval = 15;
+            stopwatch.Tick += new EventHandler(stopwatch_Tick);
+            AllowDrop = true;
             base.AutoScaleMode = AutoScaleMode.None;
-            this.BackColor = Color.Black;
+            BackColor = Color.Black;
             base.ClientSize = new Size(0x7c, 0x1a);
-            this.ContextMenuStrip = this.timerMenu;
+            ContextMenuStrip = timerMenu;
             base.ControlBox = false;
-            this.ForeColor = Color.White;
+            ForeColor = Color.White;
             base.FormBorderStyle = FormBorderStyle.None;
             base.MaximizeBox = false;
             base.MinimizeBox = false;
-            this.MinimumSize = new Size(0x7c, 0x1a);
+            MinimumSize = new Size(0x7c, 0x1a);
             base.Name = "WSplit";
-            this.Text = "WSplit";
-            this.timerMenu.ResumeLayout(false);
+            Text = "WSplit";
+            timerMenu.ResumeLayout(false);
             base.ResumeLayout(false);
             base.Icon = Resources.AppIcon;
         }
 
-        void vertButton_Click(object sender, EventArgs e)
+        private void vertButton_Click(object sender, EventArgs e)
         {
-            if (!this.vertButton.Checked)
+            if (!vertButton.Checked)
             {
-                this.vertButton.Checked = true;
+                vertButton.Checked = true;
                 Settings.Profile.HGrad = false;
-                this.horiButton.Checked = false;
-                this.updateDetailed();
+                horiButton.Checked = false;
+                updateDetailed();
             };
         }
 
-        void horiButton_Click(object sender, EventArgs e)
+        private void horiButton_Click(object sender, EventArgs e)
         {
-            if (!this.horiButton.Checked)
+            if (!horiButton.Checked)
             {
-                this.horiButton.Checked = true;
+                horiButton.Checked = true;
                 Settings.Profile.HGrad = true;
-                this.vertButton.Checked = false;
-                this.updateDetailed();
+                vertButton.Checked = false;
+                updateDetailed();
             }
         }
 
@@ -1026,24 +1033,24 @@ namespace WSplitTimer
                 Settings.Profile.FirstRun = false;
             }
 
-            this.InitializeSettings();
-            this.InitializeBackground();
-            this.InitializeFonts();
+            InitializeSettings();
+            InitializeBackground();
+            InitializeFonts();
 
-            this.clockRect.Location = new Point(0, 0);
-            this.clockRect.Size = base.Size;
+            clockRect.Location = new Point(0, 0);
+            clockRect.Size = base.Size;
 
             string[] commandLineArgs = Environment.GetCommandLineArgs();
-            for (int i = 1; (i < commandLineArgs.Length) && !this.split.LiveRun; i++)
+            for (int i = 1; (i < commandLineArgs.Length) && !split.LiveRun; i++)
             {
-                this.split.RunFile = commandLineArgs[i];
-                this.loadFile();
+                split.RunFile = commandLineArgs[i];
+                LoadFile();
             }
 
-            if ((this.split.RunFile == null) && Settings.Profile.LoadMostRecent)
+            if ((split.RunFile == null) && Settings.Profile.LoadMostRecent)
             {
-                this.split.RunFile = Settings.Profile.LastFile;
-                this.loadFile();
+                split.RunFile = Settings.Profile.LastFile;
+                LoadFile();
             }
 
             if (Settings.Profile.SaveWindowPos)
@@ -1064,62 +1071,62 @@ namespace WSplitTimer
                 }
             }
 
-            this.modalWindowOpened = false;
+            modalWindowOpened = false;
         }
 
         private void InitializeSettings()
         {
             // Initialize every item to the correct setting value
-            this.stopwatch.Interval = Settings.Profile.RefreshRate;
+            stopwatch.Interval = Settings.Profile.RefreshRate;
 
             base.TopMost = Settings.Profile.OnTop;
-            this.alwaysOnTop.Checked = Settings.Profile.OnTop;
+            alwaysOnTop.Checked = Settings.Profile.OnTop;
 
-            this.showRunTitleButton.Checked = Settings.Profile.ShowTitle;
-            this.digitalClockButton.Checked = Settings.Profile.DigitalClock;
-            this.showAttemptCount.Checked = Settings.Profile.ShowAttempts;
-            this.showRunGoalMenuItem.Checked = Settings.Profile.ShowGoal;
+            showRunTitleButton.Checked = Settings.Profile.ShowTitle;
+            digitalClockButton.Checked = Settings.Profile.DigitalClock;
+            showAttemptCount.Checked = Settings.Profile.ShowAttempts;
+            showRunGoalMenuItem.Checked = Settings.Profile.ShowGoal;
 
-            this.prevsegButton.Checked = Settings.Profile.ShowPrevSeg;
-            this.timesaveButton.Checked = Settings.Profile.ShowTimeSave;
-            this.sobButton.Checked = Settings.Profile.ShowSoB;
-            this.predpbButton.Checked = Settings.Profile.PredPB;
-            this.predbestButton.Checked = Settings.Profile.PredBest;
+            prevsegButton.Checked = Settings.Profile.ShowPrevSeg;
+            timesaveButton.Checked = Settings.Profile.ShowTimeSave;
+            sobButton.Checked = Settings.Profile.ShowSoB;
+            predpbButton.Checked = Settings.Profile.PredPB;
+            predbestButton.Checked = Settings.Profile.PredBest;
 
-            this.horiButton.Checked = Settings.Profile.HGrad;
-            this.vertButton.Checked = !Settings.Profile.HGrad;
+            horiButton.Checked = Settings.Profile.HGrad;
+            vertButton.Checked = !Settings.Profile.HGrad;
 
             if (Settings.Profile.BestAsOverall)
-                this.bestAsOverallButton.Checked = true;
+                bestAsOverallButton.Checked = true;
             else
-                this.bestAsSplitsButton.Checked = true;
+                bestAsSplitsButton.Checked = true;
 
             if (Settings.Profile.CompareAgainst == 0)
-                this.compareFastestButton.Checked = true;
+                compareFastestButton.Checked = true;
             else if (Settings.Profile.CompareAgainst == 1)
-                this.compareOldButton.Checked = true;
+                compareOldButton.Checked = true;
             else if (Settings.Profile.CompareAgainst == 2)
-                this.compareBestButton.Checked = true;
+                compareBestButton.Checked = true;
             else
-                this.compareSumBestButton.Checked = true;
+                compareSumBestButton.Checked = true;
 
-            this.populateRecentFiles();
+            populateRecentFiles();
 
-            this.timer.useFallback = Settings.Profile.FallbackPreference == 3;
-            this.showDecimalSeparator.Checked = Settings.Profile.ShowDecimalSeparator;
-            this.clockAccent.Checked = Settings.Profile.ClockAccent;
+            timer.useFallback = Settings.Profile.FallbackPreference == 3;
+            showDecimalSeparator.Checked = Settings.Profile.ShowDecimalSeparator;
+            clockAccent.Checked = Settings.Profile.ClockAccent;
             base.Opacity = Math.Min(Math.Abs(Settings.Profile.Opacity), 1.0);
 
-            this.setHotkeys();
-            this.setDisplay((DisplayMode)Settings.Profile.DisplayMode);
+            setHotkeys();
+            setDisplay((DisplayMode)Settings.Profile.DisplayMode);
         }
 
         private void InitializeBackground()
         {
-            this.plainBg.Checked = Settings.Profile.BackgroundPlain;
-            this.blackBg.Checked = Settings.Profile.BackgroundBlack;
-            this.painter.PrepareBackground();
-            this.Invalidate();
+            plainBg.Checked = Settings.Profile.BackgroundPlain;
+            blackBg.Checked = Settings.Profile.BackgroundBlack;
+            painter.PrepareBackground();
+            Invalidate();
         }
 
         private void InitializeFonts()
@@ -1127,7 +1134,7 @@ namespace WSplitTimer
             // Initialize fonts according to settings
 
             // Loads clockFont from file:
-            if (this.digitLarge == null || this.digitMed == null)
+            if (digitLarge == null || digitMed == null)
             {
                 uint num;   // Necessary, as AddFontMemResourceEx needs a uint as a out parameter
 
@@ -1139,8 +1146,8 @@ namespace WSplitTimer
                 Marshal.FreeCoTaskMem(destination);
 
                 // Once the digital font is loaded in memory, we instanciate the Font objects:
-                this.digitLarge = new Font(privateFontCollection.Families[0], 24f, GraphicsUnit.Pixel);
-                this.digitMed = new Font(privateFontCollection.Families[0], 17.33333f, GraphicsUnit.Pixel);
+                digitLarge = new Font(privateFontCollection.Families[0], 24f, GraphicsUnit.Pixel);
+                digitMed = new Font(privateFontCollection.Families[0], 17.33333f, GraphicsUnit.Pixel);
             }
 
             FontFamily family = FontFamily.Families.FirstOrDefault(f => f.Name == Settings.Profile.FontFamilySegments);
@@ -1148,61 +1155,61 @@ namespace WSplitTimer
             if (family == null || !family.IsStyleAvailable(FontStyle.Bold) || !family.IsStyleAvailable(FontStyle.Regular))
                 family = FontFamily.GenericSansSerif;
 
-            this.displayFont = new Font(family, 10.66667f * Settings.Profile.FontMultiplierSegments, GraphicsUnit.Pixel);
-            this.timeFont = new Font(family, 12f * Settings.Profile.FontMultiplierSegments, FontStyle.Bold, GraphicsUnit.Pixel);
-            this.clockLarge = new Font(family, 22.66667f, FontStyle.Bold, GraphicsUnit.Pixel);
-            this.clockMed = new Font(family, 18.66667f, FontStyle.Bold, GraphicsUnit.Pixel);
+            displayFont = new Font(family, 10.66667f * Settings.Profile.FontMultiplierSegments, GraphicsUnit.Pixel);
+            timeFont = new Font(family, 12f * Settings.Profile.FontMultiplierSegments, FontStyle.Bold, GraphicsUnit.Pixel);
+            clockLarge = new Font(family, 22.66667f, FontStyle.Bold, GraphicsUnit.Pixel);
+            clockMed = new Font(family, 18.66667f, FontStyle.Bold, GraphicsUnit.Pixel);
 
-            this.dview.InitializeFonts();
+            dview.InitializeFonts();
         }
 
         public void InitializeDisplay()
         {
-            if (this.startDelay != null)
+            if (startDelay != null)
             {
-                this.startDelay.Dispose();
-                this.startDelay = null;
+                startDelay.Dispose();
+                startDelay = null;
             }
-            this.split.Reset();
+            split.ResetSegments();
 
-            this.newOldButton.Enabled = false;
-            this.menuItemStartAt.Enabled = true;
-            this.stopButton.Enabled = false;
-            this.resetButton.Enabled = false;
+            newOldButton.Enabled = false;
+            menuItemStartAt.Enabled = true;
+            stopButton.Enabled = false;
+            resetButton.Enabled = false;
 
-            if (this.split.LastIndex < 0)
+            if (split.LastIndex < 0)
             {
-                this.dview.Hide();
-                this.split.RunFile = null;
-                this.closeButton.Enabled = false;
-                this.saveButton.Enabled = false;
-                this.saveAsButton.Enabled = false;
-                this.reloadButton.Enabled = false;
+                dview.Hide();
+                split.RunFile = null;
+                closeButton.Enabled = false;
+                saveButton.Enabled = false;
+                saveAsButton.Enabled = false;
+                reloadButton.Enabled = false;
             }
             else
             {
-                if (this.advancedDetailButton.Checked)
+                if (advancedDetailButton.Checked)
                 {
-                    this.dview.Show();
+                    dview.Show();
                 }
-                this.closeButton.Enabled = true;
+                closeButton.Enabled = true;
                 if (split.RunFile != null)
                 {
-                    this.saveButton.Enabled = true;
-                    this.reloadButton.Enabled = true;
+                    saveButton.Enabled = true;
+                    reloadButton.Enabled = true;
                 }
                 else
                 {
-                    this.saveButton.Enabled = false;
-                    this.reloadButton.Enabled = false;
+                    saveButton.Enabled = false;
+                    reloadButton.Enabled = false;
                 }
-                this.saveAsButton.Enabled = true;
+                saveAsButton.Enabled = true;
             }
-            this.stopwatch.Enabled = false;
-            this.timer.Reset();
-            this.populateDetailed();
-            this.updateDisplay();
-            this.setDisplay((DisplayMode)Settings.Profile.DisplayMode);
+            stopwatch.Enabled = false;
+            timer.Reset();
+            populateDetailed();
+            updateDisplay();
+            setDisplay((DisplayMode)Settings.Profile.DisplayMode);
         }
 
         public static bool IsTextFile(string fileName)
@@ -1253,132 +1260,126 @@ namespace WSplitTimer
             return none;
         }
 
-        private void loadFile()
+        private void LoadFile()
         {
-            if ((File.Exists(this.split.RunFile) && (new FileInfo(this.split.RunFile).Length < (10.0 * Math.Pow(1024.0, 2.0)))) && IsTextFile(this.split.RunFile))
+            bool fileCanBeOpened = (File.Exists(split.RunFile) && (new FileInfo(split.RunFile).Length < (10.0 * Math.Pow(1024.0, 2.0)))) && IsTextFile(split.RunFile);
+
+            if (!fileCanBeOpened)
             {
-                this.split.Clear();
-
-                this.split.RunGoal = "";
-                this.split.StartDelay = 0;
-                this.split.RunTitle = "";
-                this.split.AttemptsCount = 0;
-
-                this.detailPreferredSize = this.clockMinimumSize;
-                using (StreamReader reader = new StreamReader(this.split.RunFile))
-                {
-                    string str;
-                    List<string> list = new List<string>();
-                    while ((str = reader.ReadLine()) != null)
-                    {
-                        if (str.StartsWith("Title="))
-                        {
-                            this.split.RunTitle = str.Substring(6);
-                        }
-                        else
-                        {
-                            if (str.StartsWith("Goal="))
-                            {
-                                this.split.RunGoal = str.Substring(5);
-                            }
-                            if (str.StartsWith("Attempts="))
-                            {
-                                int attemptsCount = 0;
-                                int.TryParse(str.Substring(9), out attemptsCount);
-                                this.split.AttemptsCount = attemptsCount;
-                                continue;
-                            }
-                            if (str.StartsWith("Offset="))
-                            {
-                                int offsetStart = 0;
-                                int.TryParse(str.Substring(7), out offsetStart);
-                                this.split.StartDelay = offsetStart;
-                                continue;
-                            }
-                            if (str.StartsWith("Width="))
-                            {
-                                int result = 0;
-                                int.TryParse(str.Substring(6), out result);
-                                this.detailPreferredSize = this.clockMinimumSize;
-                                this.detailPreferredSize.Width = Math.Max(this.clockMinimumSize.Width, result);
-                                continue;
-                            }
-                            if (str.StartsWith("Size=") && (str.Split(new char[] { ',' }).Length == 2))
-                            {
-                                int num2 = 0;
-                                int num3 = 0;
-                                int.TryParse(str.Split(new char[] { ',' })[0].Substring(5), out num2);
-                                int.TryParse(str.Split(new char[] { ',' })[1], out num3);
-                                int width = Math.Max(this.clockMinimumSize.Width, num2);
-                                this.detailPreferredSize = new Size(width, Math.Max(this.clockMinimumSize.Height, num3));
-                                continue;
-                            }
-                            if (str.StartsWith("Icons="))
-                            {
-                                foreach (string str2 in Regex.Split(str.Substring(6), "\","))
-                                {
-                                    list.Add(str2.Replace("\"", ""));
-                                }
-                                continue;
-                            }
-                            if (str.Split(new char[] { ',' }).Length == 4)
-                            {
-                                string[] strArray2 = str.Split(new char[] { ',' });
-                                string name = strArray2[0];
-                                double num4 = 0.0;
-                                double num5 = 0.0;
-                                double num6 = 0.0;
-                                double.TryParse(strArray2[1], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""), out num4);
-                                double.TryParse(strArray2[2], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""), out num5);
-                                double.TryParse(strArray2[3], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""), out num6);
-                                this.split.Add(new Segment(name, num4, num5, num6));
-                            }
-                        }
-                    }
-                    for (int i = 0; i < this.split.Count; i++)
-                    {
-                        if (i < list.Count)
-                        {
-                            this.split.segments[i].IconPath = list[i];
-                            try
-                            {
-                                this.split.segments[i].Icon = Image.FromFile(list[i]);
-                            }
-                            catch
-                            {
-                                this.split.segments[i].Icon = Resources.MissingIcon;
-                            }
-                        }
-                        else
-                        {
-                            this.split.segments[i].Icon = Resources.MissingIcon;
-                            this.split.segments[i].IconPath = "";
-                        }
-                    }
-                    this.currentDispMode = DisplayMode.Null;
-                    this.InitializeDisplay();
-                    if (this.split.RunFile != null)
-                    {
-                        if (Settings.Profile.RecentFiles != null)
-                        {
-                            if (Settings.Profile.RecentFiles.Contains(this.split.RunFile))
-                            {
-                                Settings.Profile.RecentFiles.Remove(this.split.RunFile);
-                            }
-                            else if (Settings.Profile.RecentFiles.Count > 9)
-                            {
-                                Settings.Profile.RecentFiles.RemoveAt(Settings.Profile.RecentFiles.Count - 1);
-                            }
-                            Settings.Profile.RecentFiles.Insert(0, this.split.RunFile);
-                        }
-                        this.populateRecentFiles();
-                    }
-
-                    this.split.UnsavedSplit = false;
-                    return;
-                }
+                closeFile();
             }
-            this.closeFile();
+
+            split.Clear();
+            detailPreferredSize = clockMinimumSize;
+            using (StreamReader reader = new StreamReader(split.RunFile))
+            {
+                string splitFileLine;
+                List<string> list = new List<string>();
+                try
+                {
+                    while ((splitFileLine = reader.ReadLine()) != null)
+                    {
+                        if (splitFileLine.StartsWith("Title="))
+                        {
+                            split.RunTitle = splitFileLine.Substring(6);
+                        }
+                        if (splitFileLine.StartsWith("Goal="))
+                        {
+                            split.RunGoal = splitFileLine.Substring(5);
+                        }
+                        if (splitFileLine.StartsWith("Attempts="))
+                        {
+                            int attemptsCount = int.Parse(splitFileLine.Substring(9));
+                            split.AttemptsCount = attemptsCount;
+                        }
+                        if (splitFileLine.StartsWith("Offset="))
+                        {
+                            int offsetStart = int.Parse(splitFileLine.Substring(7));
+                            split.StartDelay = offsetStart;
+                        }
+                        if (splitFileLine.StartsWith("Width="))
+                        {
+                            int formWidth = int.Parse(splitFileLine.Substring(6));
+                            detailPreferredSize = clockMinimumSize;
+                            detailPreferredSize.Width = Math.Max(clockMinimumSize.Width, formWidth);
+                        }
+                        if (splitFileLine.StartsWith("Size=") && (splitFileLine.Split(new char[] { ',' }).Length == 2))
+                        {
+                            string[] storedWidthHeight = splitFileLine.Split(',');
+                            int width = int.Parse(storedWidthHeight[0].Substring(5));
+                            int height = int.Parse(storedWidthHeight[1]);
+
+                            detailPreferredSize = new Size(
+                                Math.Max(clockMinimumSize.Width, width),
+                                Math.Max(clockMinimumSize.Height, height));
+                        }
+                        if (splitFileLine.StartsWith("Icons="))
+                        {
+                            foreach (string icon in Regex.Split(splitFileLine.Substring(6), "\","))
+                            {
+                                list.Add(icon.Replace("\"", ""));
+                            }
+                        }
+                        if (splitFileLine.Split(new char[] { ',' }).Length == 4)
+                        {
+                            string[] splitData = splitFileLine.Split(new char[] { ',' });
+                            string splitName = splitData[0];
+                            double oldTime = double.Parse(splitData[1], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""));
+                            double bestTime = double.Parse(splitData[2], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""));
+                            double bestSegment = double.Parse(splitData[3], NumberStyles.AllowDecimalPoint, CultureInfo.CreateSpecificCulture(""));
+
+                            split.Add(new SplitSegment(splitName, oldTime, bestTime, bestSegment));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // TODO: Problem reading splits file.
+                    throw;
+                }
+
+                for (int i = 0; i < split.Count; i++)
+                {
+                    if (i < list.Count)
+                    {
+                        split.segments[i].IconPath = list[i];
+                        try
+                        {
+                            split.segments[i].Icon = Image.FromFile(list[i]);
+                        }
+                        catch
+                        {
+                            split.segments[i].Icon = Resources.MissingIcon;
+                        }
+                    }
+                    else
+                    {
+                        split.segments[i].Icon = Resources.MissingIcon;
+                        split.segments[i].IconPath = "";
+                    }
+                }
+                currentDispMode = DisplayMode.Null;
+                InitializeDisplay();
+                if (split.RunFile != null)
+                {
+                    if (Settings.Profile.RecentFiles != null)
+                    {
+                        if (Settings.Profile.RecentFiles.Contains(split.RunFile))
+                        {
+                            Settings.Profile.RecentFiles.Remove(split.RunFile);
+                        }
+                        else if (Settings.Profile.RecentFiles.Count > 9)
+                        {
+                            Settings.Profile.RecentFiles.RemoveAt(Settings.Profile.RecentFiles.Count - 1);
+                        }
+                        Settings.Profile.RecentFiles.Insert(0, split.RunFile);
+                    }
+                    populateRecentFiles();
+                }
+
+                split.UnsavedSplit = false;
+                return;
+            }
         }
 
         public static int MeasureDisplayStringWidth(string text, Font font)
@@ -1399,55 +1400,55 @@ namespace WSplitTimer
             return (int)(layoutRect.Right + 1f);
         }
 
-        private void newButton_Click(object sender, EventArgs e)
+        private void NewButton_Click(object sender, EventArgs e)
         {
-            this.split.UpdateBest(Settings.Profile.BestAsOverall);
-            RunEditorDialog editor = new RunEditorDialog(this.split)
+            split.UpdateBest(Settings.Profile.BestAsOverall);
+            RunEditorDialog editor = new RunEditorDialog(split)
             {
-                titleBox = { Text = this.split.RunTitle },
-                attemptsBox = { Text = this.split.AttemptsCount.ToString() },
-                txtGoal = { Text = this.split.RunGoal }
+                titleBox = { Text = split.RunTitle },
+                attemptsBox = { Text = split.AttemptsCount.ToString() },
+                txtGoal = { Text = split.RunGoal }
             };
             base.TopMost = false;
-            this.dview.TopMost = false;
-            this.modalWindowOpened = true;
+            dview.TopMost = false;
+            modalWindowOpened = true;
             if (editor.ShowDialog() == DialogResult.OK)
             {
-                this.split.Clear();
-                foreach (Segment segment in editor.editList)
+                split.Clear();
+                foreach (SplitSegment segment in editor.editList)
                 {
-                    this.split.Add(segment);
+                    split.Add(segment);
                 }
                 int attemptsCount = 0;
-                this.split.RunTitle = editor.titleBox.Text;
-                this.split.RunGoal = editor.txtGoal.Text;
+                split.RunTitle = editor.titleBox.Text;
+                split.RunGoal = editor.txtGoal.Text;
                 int.TryParse(editor.attemptsBox.Text, out attemptsCount);
-                this.split.AttemptsCount = attemptsCount;
-                this.InitializeDisplay();
-                this.split.UnsavedSplit = true;
-                this.split.StartDelay = editor.startDelay;
+                split.AttemptsCount = attemptsCount;
+                InitializeDisplay();
+                split.UnsavedSplit = true;
+                split.StartDelay = editor.startDelay;
             }
             else
             {
-                this.split.RestoreBest();
+                split.RestoreBest();
             }
             base.TopMost = Settings.Profile.OnTop;
-            this.dview.TopMost = Settings.Profile.DViewOnTop;
-            this.modalWindowOpened = false;
+            dview.TopMost = Settings.Profile.DViewOnTop;
+            modalWindowOpened = false;
         }
 
-        private void newOldButton_Click(object sender, EventArgs e)
+        private void NewOldButton_Click(object sender, EventArgs e)
         {
-            this.split.LiveToOld();
+            split.LiveToOld();
         }
 
-        public void nextStage()
+        public void NextStage()
         {
-            this.split.Next();
-            this.updateDisplay();
+            split.Next();
+            updateDisplay();
         }
 
-        private void menuItemAdvancedDisplay_Click(object sender, EventArgs e)
+        private void MenuItemAdvancedDisplay_Click(object sender, EventArgs e)
         {
             // Used to be opacity button
             /*ChangeOpacity opacity = new ChangeOpacity(this);
@@ -1466,30 +1467,30 @@ namespace WSplitTimer
             this.dview.TopMost = Settings.Profile.DViewOnTop;
             this.modalWindowOpened = false;*/
 
-            this.configure(3);
+            configure(3);
         }
 
         private void openButton_Click(object sender, EventArgs e)
         {
-            if (this.promptForSave())
+            if (promptForSave())
             {
-                this.modalWindowOpened = true;
-                if (this.openFileDialog.ShowDialog() == DialogResult.OK)
+                modalWindowOpened = true;
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    this.split.RunFile = this.openFileDialog.FileName;
-                    this.loadFile();
+                    split.RunFile = openFileDialog.FileName;
+                    LoadFile();
                 }
-                this.modalWindowOpened = false;
+                modalWindowOpened = false;
             }
         }
 
         public void pauseResume()
         {
             // If the refreshing stopwatch is running
-            if (this.stopwatch.Enabled)
+            if (stopwatch.Enabled)
             {
-                this.stopwatch.Enabled = false;
-                if (this.startDelay != null)
+                stopwatch.Enabled = false;
+                if (startDelay != null)
                 {
                     /*this.startDelay.Dispose();
                     this.startDelay = null;
@@ -1500,107 +1501,107 @@ namespace WSplitTimer
 
                     InitializeDisplay();
                 }
-                this.timer.Stop();
+                timer.Stop();
                 base.Invalidate();
             }
 
             // If the split aren't done, so if the timer isn't running
-            else if (!this.split.Done && (this.startDelay == null))
+            else if (!split.Done && (startDelay == null))
             {
                 // If the timer had not been started yet
-                if (this.timer.ElapsedTicks == 0L)
+                if (timer.ElapsedTicks == 0L)
                 {
                     // If it wasn't running
-                    if (!this.timer.IsRunning)
-                        this.InitializeDisplay();
+                    if (!timer.IsRunning)
+                        InitializeDisplay();
 
-                    this.startTimer();
+                    startTimer();
 
-                    this.menuItemStartAt.Enabled = false;
-                    this.resetButton.Enabled = true;
-                    this.stopButton.Enabled = true;
+                    menuItemStartAt.Enabled = false;
+                    resetButton.Enabled = true;
+                    stopButton.Enabled = true;
                 }
 
                 // If the timer was paused
                 else
-                    this.timer.Start();
+                    timer.Start();
 
-                this.stopwatch.Enabled = true;
+                stopwatch.Enabled = true;
             }
         }
 
         private void plainBg_Click(object sender, EventArgs e)
         {
-            this.blackBg.Checked = false;
+            blackBg.Checked = false;
             Settings.Profile.BackgroundBlack = false;
             Settings.Profile.BackgroundPlain = !Settings.Profile.BackgroundPlain;
-            this.plainBg.Checked = Settings.Profile.BackgroundPlain;
-            this.painter.RequestBackgroundRedraw();
+            plainBg.Checked = Settings.Profile.BackgroundPlain;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void prevsegButton_Click(object sender, EventArgs e)
         {
-            this.prevsegButton.Checked = !Settings.Profile.ShowPrevSeg;
+            prevsegButton.Checked = !Settings.Profile.ShowPrevSeg;
             Settings.Profile.ShowPrevSeg = !Settings.Profile.ShowPrevSeg;
-            if (this.currentDispMode == DisplayMode.Detailed) { this.displayDetail(); };
+            if (currentDispMode == DisplayMode.Detailed) { displayDetail(); };
         }
 
         private void timesaveButton_Click(object sender, EventArgs e)
         {
-            this.timesaveButton.Checked = !Settings.Profile.ShowTimeSave;
+            timesaveButton.Checked = !Settings.Profile.ShowTimeSave;
             Settings.Profile.ShowTimeSave = !Settings.Profile.ShowTimeSave;
-            if (this.currentDispMode == DisplayMode.Detailed) { this.displayDetail(); };
+            if (currentDispMode == DisplayMode.Detailed) { displayDetail(); };
         }
 
         private void sobButton_Click(object sender, EventArgs e)
         {
-            this.sobButton.Checked = !Settings.Profile.ShowSoB;
+            sobButton.Checked = !Settings.Profile.ShowSoB;
             Settings.Profile.ShowSoB = !Settings.Profile.ShowSoB;
-            if (this.currentDispMode == DisplayMode.Detailed) { this.displayDetail(); };
+            if (currentDispMode == DisplayMode.Detailed) { displayDetail(); };
         }
 
         private void predpbButton_Click(object sender, EventArgs e)
         {
-            this.predpbButton.Checked = !Settings.Profile.PredPB;
+            predpbButton.Checked = !Settings.Profile.PredPB;
             Settings.Profile.PredPB = !Settings.Profile.PredPB;
-            if (this.currentDispMode == DisplayMode.Detailed) { this.displayDetail(); };
+            if (currentDispMode == DisplayMode.Detailed) { displayDetail(); };
         }
 
         private void predbestButton_Click(object sender, EventArgs e)
         {
-            this.predbestButton.Checked = !Settings.Profile.PredBest;
+            predbestButton.Checked = !Settings.Profile.PredBest;
             Settings.Profile.PredBest = !Settings.Profile.PredBest;
-            if (this.currentDispMode == DisplayMode.Detailed) { this.displayDetail(); };
+            if (currentDispMode == DisplayMode.Detailed) { displayDetail(); };
         }
 
         public void populateDetailed()
         {
-            this.dview.segs.Rows.Clear();
-            this.dview.segs.Rows.Add(new object[] { "Segment", "Old", "Best", "SoB", "Live", "+/-" });
-            this.dview.segs.Rows[0].Frozen = true;
-            this.dview.finalSeg.Rows.Clear();
-            this.dview.finalSeg.Rows.Add();
+            dview.segs.Rows.Clear();
+            dview.segs.Rows.Add(new object[] { "Segment", "Old", "Best", "SoB", "Live", "+/-" });
+            dview.segs.Rows[0].Frozen = true;
+            dview.finalSeg.Rows.Clear();
+            dview.finalSeg.Rows.Add();
 
-            foreach (Segment segment in this.split.segments)
+            foreach (SplitSegment segment in split.segments)
             {
-                this.dview.segs.Rows.Add(new object[] { segment.Name });
-                if (this.dview.finalSeg.RowCount > 1)
-                    this.dview.finalSeg.Rows.RemoveAt(1);
+                dview.segs.Rows.Add(new object[] { segment.Name });
+                if (dview.finalSeg.RowCount > 1)
+                    dview.finalSeg.Rows.RemoveAt(1);
 
-                this.dview.finalSeg.Rows.Add(new object[] { segment.Name });
+                dview.finalSeg.Rows.Add(new object[] { segment.Name });
             }
 
-            if (this.dview.segs.RowCount >= 2)
-                this.dview.segs.Rows.RemoveAt(this.dview.segs.RowCount - 1);
+            if (dview.segs.RowCount >= 2)
+                dview.segs.Rows.RemoveAt(dview.segs.RowCount - 1);
 
-            this.dview.finalSeg.Rows[0].Height = 0;
-            this.dview.finalSeg.Height = (this.dview.finalSeg.RowCount - 1) * this.dview.finalSeg.RowTemplate.Height;
+            dview.finalSeg.Rows[0].Height = 0;
+            dview.finalSeg.Height = (dview.finalSeg.RowCount - 1) * dview.finalSeg.RowTemplate.Height;
         }
 
         private void populateRecentFiles()
         {
-            this.openRecent.DropDownItems.Clear();
+            openRecent.DropDownItems.Clear();
             if ((Settings.Profile.RecentFiles != null) && (Settings.Profile.RecentFiles.Count > 0))
             {
                 foreach (string str in Settings.Profile.RecentFiles)
@@ -1611,16 +1612,16 @@ namespace WSplitTimer
                         Text = Path.GetFileName(str),
                         ToolTipText = str
                     };
-                    item.Click += new EventHandler(this.recent_Click);
-                    this.openRecent.DropDownItems.Add(item);
+                    item.Click += new EventHandler(recent_Click);
+                    openRecent.DropDownItems.Add(item);
                 }
-                this.openRecent.DropDownItems.Add(new ToolStripSeparator());
+                openRecent.DropDownItems.Add(new ToolStripSeparator());
                 ToolStripMenuItem item2 = new ToolStripMenuItem
                 {
                     Text = "Clear History"
                 };
-                item2.Click += new EventHandler(this.clear_Click);
-                this.openRecent.DropDownItems.Add(item2);
+                item2.Click += new EventHandler(clear_Click);
+                openRecent.DropDownItems.Add(item2);
             }
             else
             {
@@ -1629,89 +1630,89 @@ namespace WSplitTimer
                     Text = "None",
                     Enabled = false
                 };
-                this.openRecent.DropDownItems.Add(item3);
+                openRecent.DropDownItems.Add(item3);
             }
         }
 
         public void prevStage()
         {
-            if (this.split.LiveIndex >= 1)
+            if (split.LiveIndex >= 1)
             {
-                if (this.split.LiveIndex > this.split.LastIndex)
+                if (split.LiveIndex > split.LastIndex)
                 {
-                    this.stopwatch.Enabled = true;
+                    stopwatch.Enabled = true;
                 }
-                this.split.Previous();
-                this.updateDisplay();
+                split.Previous();
+                updateDisplay();
             }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            return this.timerHotkey(keyData);
+            return timerHotkey(keyData);
         }
 
         private void recent_Click(object sender, EventArgs e)
         {
-            if (this.promptForSave())
+            if (promptForSave())
             {
-                this.split.RunFile = ((ToolStripMenuItem)sender).Name;
-                this.loadFile();
+                split.RunFile = ((ToolStripMenuItem)sender).Name;
+                LoadFile();
             }
         }
 
         private void reloadButton_Click(object sender, EventArgs e)
         {
-            this.loadFile();
+            LoadFile();
         }
 
         private void resetButton_Click(object sender, EventArgs e)
         {
-            this.ResetSplits();
+            ResetSplits();
         }
 
         private void saveAsButton_Click(object sender, EventArgs e)
         {
-            this.saveAs();
+            saveAs();
         }
 
         private void saveAs()
         {
-            this.modalWindowOpened = true;
-            if (this.saveFileDialog.ShowDialog() == DialogResult.OK)
+            modalWindowOpened = true;
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
-                this.split.RunFile = this.saveFileDialog.FileName;
-                this.saveFile();
+                split.RunFile = saveFileDialog.FileName;
+                saveFile();
             }
-            this.modalWindowOpened = false;
+            modalWindowOpened = false;
         }
 
         private void saveButton_Click(object sender, EventArgs e)
         {
-            this.saveFile();
+            saveFile();
         }
 
         private void saveFile()
         {
-            if (this.split.RunFile == null)
+            if (split.RunFile == null)
             {
-                this.saveButton.Enabled = false;
+                saveButton.Enabled = false;
             }
             else
             {
-                this.split.UpdateBest(Settings.Profile.BestAsOverall);
-                new FileInfo(this.split.RunFile);
+                split.UpdateBest(Settings.Profile.BestAsOverall);
+                new FileInfo(split.RunFile);
                 StreamWriter writer = null;
                 try
                 {
-                    writer = new StreamWriter(this.split.RunFile);
-                    writer.WriteLine("Title=" + this.split.RunTitle);
-                    writer.WriteLine("Goal=" + this.split.RunGoal);
-                    writer.WriteLine("Attempts=" + this.split.AttemptsCount);
-                    writer.WriteLine("Offset=" + this.split.StartDelay);
-                    writer.WriteLine(string.Concat(new object[] { "Size=", this.detailPreferredSize.Width, ",", this.detailPreferredSize.Height }));
+                    writer = new StreamWriter(split.RunFile);
+                    writer.WriteLine("Title=" + split.RunTitle);
+                    writer.WriteLine("Goal=" + split.RunGoal);
+                    writer.WriteLine("Attempts=" + split.AttemptsCount);
+                    writer.WriteLine("Offset=" + split.StartDelay);
+                    writer.WriteLine(string.Concat(new object[] { "Size=", detailPreferredSize.Width, ",", detailPreferredSize.Height }));
                     List<string> list = new List<string>();
-                    foreach (Segment segment in this.split.segments)
+                    foreach (SplitSegment segment in split.segments)
                     {
                         if (segment.Name != null)
                         {
@@ -1723,7 +1724,7 @@ namespace WSplitTimer
                     }
                     writer.WriteLine("Icons=" + string.Join(",", list.ToArray()));
                     writer.Close();
-                    this.split.UnsavedSplit = false;
+                    split.UnsavedSplit = false;
                 }
                 catch (Exception exception)
                 {
@@ -1735,17 +1736,17 @@ namespace WSplitTimer
                     {
                         if (Settings.Profile.RecentFiles != null)
                         {
-                            if (Settings.Profile.RecentFiles.Contains(this.split.RunFile))
+                            if (Settings.Profile.RecentFiles.Contains(split.RunFile))
                             {
-                                Settings.Profile.RecentFiles.Remove(this.split.RunFile);
+                                Settings.Profile.RecentFiles.Remove(split.RunFile);
                             }
                             else if (Settings.Profile.RecentFiles.Count > 9)
                             {
                                 Settings.Profile.RecentFiles.RemoveAt(Settings.Profile.RecentFiles.Count - 1);
                             }
-                            Settings.Profile.RecentFiles.Insert(0, this.split.RunFile);
+                            Settings.Profile.RecentFiles.Insert(0, split.RunFile);
                         }
-                        this.populateRecentFiles();
+                        populateRecentFiles();
                     }
                 }
             }
@@ -1755,113 +1756,113 @@ namespace WSplitTimer
         {
             CustomizeColors colors = new CustomizeColors();
             base.TopMost = false;
-            this.dview.TopMost = false;
-            this.modalWindowOpened = true;
+            dview.TopMost = false;
+            modalWindowOpened = true;
             if (colors.ShowDialog(this) == DialogResult.OK)
-                this.updateDetailed();
+                updateDetailed();
 
             base.TopMost = Settings.Profile.OnTop;
-            this.dview.TopMost = Settings.Profile.DViewOnTop;
-            this.modalWindowOpened = false;
+            dview.TopMost = Settings.Profile.DViewOnTop;
+            modalWindowOpened = false;
         }
 
         private void setDisplay(DisplayMode mode)
         {
             Settings.Profile.DisplayMode = (int)mode;
-            this.clockResize = false;
-            this.MinimumSize = new Size(0, 0);
-            this.displayTimerOnlyButton.Checked = false;
-            this.displayCompactButton.Checked = false;
-            this.displayWideButton.Checked = false;
-            this.displayDetailedButton.Checked = false;
+            clockResize = false;
+            MinimumSize = new Size(0, 0);
+            displayTimerOnlyButton.Checked = false;
+            displayCompactButton.Checked = false;
+            displayWideButton.Checked = false;
+            displayDetailedButton.Checked = false;
             if (mode == DisplayMode.Compact)
             {
-                this.displayCompactButton.Checked = true;
+                displayCompactButton.Checked = true;
             }
             else if (mode == DisplayMode.Wide)
             {
-                this.displayWideButton.Checked = true;
+                displayWideButton.Checked = true;
             }
             else if (mode == DisplayMode.Detailed)
             {
-                this.displayDetailedButton.Checked = true;
+                displayDetailedButton.Checked = true;
             }
             else
             {
-                this.displayTimerOnlyButton.Checked = true;
+                displayTimerOnlyButton.Checked = true;
             }
-            if (this.split.LiveRun)
+            if (split.LiveRun)
             {
                 if (mode == DisplayMode.Compact)
                 {
-                    this.displayCompact();
+                    displayCompact();
                 }
                 else if (mode == DisplayMode.Wide)
                 {
-                    this.displayWide();
+                    displayWide();
                 }
                 else if (mode == DisplayMode.Detailed)
                 {
-                    this.displayDetail();
+                    displayDetail();
                 }
                 else
                 {
-                    this.displayTimer();
+                    displayTimer();
                 }
             }
             else
             {
-                this.displayTimer();
+                displayTimer();
             }
 
-            this.painter.RequestBackgroundRedraw();
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void setHotkeys()
         {
-            this.clearHotkeys();
+            clearHotkeys();
             if (Settings.Profile.EnabledHotkeys)
             {
-                RegisterHotKey(base.Handle, 0x9d82, this.keyMods(Settings.Profile.SplitKey), this.stripkeyMods(Settings.Profile.SplitKey));
-                RegisterHotKey(base.Handle, 0x9d83, this.keyMods(Settings.Profile.PauseKey), this.stripkeyMods(Settings.Profile.PauseKey));
-                RegisterHotKey(base.Handle, 0x9d84, this.keyMods(Settings.Profile.StopKey), this.stripkeyMods(Settings.Profile.StopKey));
-                RegisterHotKey(base.Handle, 0x9d85, this.keyMods(Settings.Profile.ResetKey), this.stripkeyMods(Settings.Profile.ResetKey));
-                RegisterHotKey(base.Handle, 0x9d86, this.keyMods(Settings.Profile.PrevKey), this.stripkeyMods(Settings.Profile.PrevKey));
-                RegisterHotKey(base.Handle, 0x9d87, this.keyMods(Settings.Profile.NextKey), this.stripkeyMods(Settings.Profile.NextKey));
-                RegisterHotKey(base.Handle, 0x9d88, this.keyMods(Settings.Profile.CompTypeKey), this.stripkeyMods(Settings.Profile.CompTypeKey));
+                RegisterHotKey(base.Handle, 0x9d82, keyMods(Settings.Profile.SplitKey), stripkeyMods(Settings.Profile.SplitKey));
+                RegisterHotKey(base.Handle, 0x9d83, keyMods(Settings.Profile.PauseKey), stripkeyMods(Settings.Profile.PauseKey));
+                RegisterHotKey(base.Handle, 0x9d84, keyMods(Settings.Profile.StopKey), stripkeyMods(Settings.Profile.StopKey));
+                RegisterHotKey(base.Handle, 0x9d85, keyMods(Settings.Profile.ResetKey), stripkeyMods(Settings.Profile.ResetKey));
+                RegisterHotKey(base.Handle, 0x9d86, keyMods(Settings.Profile.PrevKey), stripkeyMods(Settings.Profile.PrevKey));
+                RegisterHotKey(base.Handle, 0x9d87, keyMods(Settings.Profile.NextKey), stripkeyMods(Settings.Profile.NextKey));
+                RegisterHotKey(base.Handle, 0x9d88, keyMods(Settings.Profile.CompTypeKey), stripkeyMods(Settings.Profile.CompTypeKey));
             }
-            RegisterHotKey(base.Handle, 0x9d89, this.keyMods(Settings.Profile.HotkeyToggleKey), this.stripkeyMods(Settings.Profile.HotkeyToggleKey));
+            RegisterHotKey(base.Handle, 0x9d89, keyMods(Settings.Profile.HotkeyToggleKey), stripkeyMods(Settings.Profile.HotkeyToggleKey));
         }
 
         private void showAttemptCount_Click(object sender, EventArgs e)
         {
             Settings.Profile.ShowAttempts = !Settings.Profile.ShowAttempts;
-            this.showAttemptCount.Checked = Settings.Profile.ShowAttempts;
-            this.painter.RequestBackgroundRedraw();
+            showAttemptCount.Checked = Settings.Profile.ShowAttempts;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void showRunGoal_Click(object sender, EventArgs e)
         {
             Settings.Profile.ShowGoal = !Settings.Profile.ShowGoal;
-            this.showRunGoalMenuItem.Checked = Settings.Profile.ShowGoal;
-            this.setDisplay((DisplayMode)Settings.Profile.DisplayMode);
+            showRunGoalMenuItem.Checked = Settings.Profile.ShowGoal;
+            setDisplay((DisplayMode)Settings.Profile.DisplayMode);
         }
 
         private void showDecimalSeparator_Click(object sender, EventArgs e)
         {
             Settings.Profile.ShowDecimalSeparator = !Settings.Profile.ShowDecimalSeparator;
-            this.showDecimalSeparator.Checked = Settings.Profile.ShowDecimalSeparator;
-            this.painter.RequestBackgroundRedraw();
+            showDecimalSeparator.Checked = Settings.Profile.ShowDecimalSeparator;
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
         }
 
         private void showRunTitleButton_Click(object sender, EventArgs e)
         {
             Settings.Profile.ShowTitle = !Settings.Profile.ShowTitle;
-            this.showRunTitleButton.Checked = Settings.Profile.ShowTitle;
-            this.setDisplay((DisplayMode)Settings.Profile.DisplayMode);
+            showRunTitleButton.Checked = Settings.Profile.ShowTitle;
+            setDisplay((DisplayMode)Settings.Profile.DisplayMode);
         }
 
         private void showSegsDec()
@@ -1870,8 +1871,8 @@ namespace WSplitTimer
             {
                 Settings.Profile.DisplaySegs--;
             }
-            this.setDisplay(this.currentDispMode);
-            this.updateDetailed();
+            setDisplay(currentDispMode);
+            updateDetailed();
         }
 
         private void showSegsInc()
@@ -1880,44 +1881,44 @@ namespace WSplitTimer
             {
                 Settings.Profile.DisplaySegs++;
             }
-            this.setDisplay(this.currentDispMode);
-            this.updateDetailed();
+            setDisplay(currentDispMode);
+            updateDetailed();
         }
 
         private void startDelay_Tick(object sender, EventArgs e, long startingTicks = 0)
         {
-            this.startDelay.Dispose();
-            this.startDelay = null;
-            this.split.AttemptsCount++;
-            this.timer.StartAt(new TimeSpan(startingTicks));
+            startDelay.Dispose();
+            startDelay = null;
+            split.AttemptsCount++;
+            timer.StartAt(new TimeSpan(startingTicks));
         }
 
         private void startTimer(long startingTicks = 0, bool useDelay = true)
         {
-            if (this.split.Count > 0)
+            if (split.Count > 0)
             {
-                Settings.Profile.Width = this.split.segments[this.split.LastIndex].TimeWidth;
-                Settings.Profile.last = this.split.segments[this.split.LastIndex].TimeString;
+                Settings.Profile.Width = split.segments[split.LastIndex].TimeWidth;
+                Settings.Profile.last = split.segments[split.LastIndex].TimeString;
             };
-            if (this.startDelay == null)
+            if (startDelay == null)
             {
-                if (useDelay && this.split.StartDelay > 0)
+                if (useDelay && split.StartDelay > 0)
                 {
-                    this.offsetStartTime = DateTime.UtcNow;
-                    this.startDelay = new Timer();
-                    this.startDelay.Interval = this.split.StartDelay;
-                    this.startDelay.Tick += (sender, e) => startDelay_Tick(sender, e, startingTicks);
-                    this.startDelay.Enabled = true;
+                    offsetStartTime = DateTime.UtcNow;
+                    startDelay = new Timer();
+                    startDelay.Interval = split.StartDelay;
+                    startDelay.Tick += (sender, e) => startDelay_Tick(sender, e, startingTicks);
+                    startDelay.Enabled = true;
                     base.Invalidate();
                 }
                 else
                 {
-                    if (this.split.LiveRun)
+                    if (split.LiveRun)
                     {
-                        this.split.AttemptsCount++;
+                        split.AttemptsCount++;
                     }
-                    this.timer.StartAt(new TimeSpan(startingTicks));
-                    this.painter.RequestBackgroundRedraw();
+                    timer.StartAt(new TimeSpan(startingTicks));
+                    painter.RequestBackgroundRedraw();
                     base.Invalidate();
                 }
             }
@@ -1930,7 +1931,7 @@ namespace WSplitTimer
 
         private void stopwatch_Tick(object sender, EventArgs e)
         {
-            if (this.flashDelay == null)
+            if (flashDelay == null)
             {
                 base.Invalidate();
             }
@@ -1945,7 +1946,7 @@ namespace WSplitTimer
                 if ((gg) && (r == 127)) { bb = true; gg = false; };
                 if ((bb) && (g == 127)) { rr = true; bb = false; };
                 // I don't like this at all
-                this.updateDetailed();
+                updateDetailed();
             };
         }
 
@@ -2011,33 +2012,33 @@ namespace WSplitTimer
 
         public void timerControl()
         {
-            if (this.doubleTapDelay == null)
+            if (doubleTapDelay == null)
             {
                 if (Settings.Profile.DoubleTapGuard > 0)
                 {
-                    this.doubleTapDelay = new Timer();
-                    this.doubleTapDelay.Tick += new EventHandler(this.doubleTapDelay_Tick);
-                    this.doubleTapDelay.Interval = Math.Min(0x1388, Settings.Profile.DoubleTapGuard);
-                    this.doubleTapDelay.Enabled = true;
+                    doubleTapDelay = new Timer();
+                    doubleTapDelay.Tick += new EventHandler(doubleTapDelay_Tick);
+                    doubleTapDelay.Interval = Math.Min(0x1388, Settings.Profile.DoubleTapGuard);
+                    doubleTapDelay.Enabled = true;
                 }
-                if (this.split.LiveRun)
+                if (split.LiveRun)
                 {
-                    if (this.stopwatch.Enabled && (this.startDelay == null))
+                    if (stopwatch.Enabled && (startDelay == null))
                     {
-                        this.doSplit();
+                        doSplit();
                     }
-                    else if (this.split.Done)
+                    else if (split.Done)
                     {
-                        this.StopSplits();
+                        StopSplits();
                     }
                     else
                     {
-                        this.pauseResume();
+                        pauseResume();
                     }
                 }
                 else
                 {
-                    this.pauseResume();
+                    pauseResume();
                 }
             }
         }
@@ -2049,39 +2050,39 @@ namespace WSplitTimer
             {
                 case Keys.Space:
                 case Keys.Enter:    // Split
-                    this.timerControl();
+                    timerControl();
                     return true;
 
                 case Keys.Left:     // Previous
-                    this.prevStage();
+                    prevStage();
                     return true;
 
                 case Keys.Up:       // Expand splits
-                    this.showSegsInc();
+                    showSegsInc();
                     return true;
 
                 case Keys.Right:    // Next
-                    this.nextStage();
+                    NextStage();
                     return true;
 
                 case Keys.Down:     // Unexpand splits
-                    this.showSegsDec();
+                    showSegsDec();
                     return true;
 
                 case Keys.D0:       // Switch to timer display
-                    this.setDisplay(DisplayMode.Timer);
+                    setDisplay(DisplayMode.Timer);
                     return true;
 
                 case Keys.D1:       // Switch to compact display
-                    this.setDisplay(DisplayMode.Compact);
+                    setDisplay(DisplayMode.Compact);
                     return true;
 
                 case Keys.D2:       // Switch to wide display
-                    this.setDisplay(DisplayMode.Wide);
+                    setDisplay(DisplayMode.Wide);
                     return true;
 
                 case Keys.D3:       // Switch to detailed display
-                    this.setDisplay(DisplayMode.Detailed);
+                    setDisplay(DisplayMode.Detailed);
                     return true;
 
                 // Got removed for being more annoying than useful
@@ -2090,19 +2091,19 @@ namespace WSplitTimer
                     return true;*/
 
                 case Keys.P:        // Pause
-                    this.pauseResume();
+                    pauseResume();
                     return true;
 
                 case Keys.R:        // Reset
-                    this.ResetSplits();
+                    ResetSplits();
                     return true;
 
                 case Keys.S:        // Stop
-                    this.StopSplits();
+                    StopSplits();
                     return true;
 
                 case Keys.Tab:      // Switch comparison type
-                    this.SwitchComparisonType();
+                    SwitchComparisonType();
                     return true;
             }
             return false;
@@ -2110,8 +2111,8 @@ namespace WSplitTimer
 
         private void unflashClock(object sender, EventArgs e)
         {
-            this.flashDelay.Dispose();
-            this.flashDelay = null;
+            flashDelay.Dispose();
+            flashDelay = null;
         }
 
         // Detailed Update (Updates some stuff, not necessarely in the detailed window or detailed view.
@@ -2119,119 +2120,119 @@ namespace WSplitTimer
         {
             ColorSettings colors = ColorSettings.Profile;
             // For every split, checks conditions set the time string, the color and the width of the split time
-            for (int i = 0; i <= this.split.LastIndex; i++)
+            for (int i = 0; i <= split.LastIndex; i++)
             {
-                if ((i < this.split.LiveIndex) && (this.timer.ElapsedTicks > 0L))
+                if ((i < split.LiveIndex) && (timer.ElapsedTicks > 0L))
                 {
-                    double num2 = this.split.SegDelta(this.split.segments[i].LiveTime, i);
-                    double num3 = this.split.RunDelta(this.split.segments[i].LiveTime, i);
+                    double num2 = split.SegDelta(split.segments[i].LiveTime, i);
+                    double num3 = split.RunDelta(split.segments[i].LiveTime, i);
 
                     // If there is a Delta to write...
-                    if ((this.split.segments[i].LiveTime > 0.0) && (this.split.CompTime(i) > 0.0))
+                    if ((split.segments[i].LiveTime > 0.0) && (split.CompTime(i) > 0.0))
                     {
-                        this.split.segments[i].TimeString = this.timeFormatter(this.split.RunDeltaAt(i), TimeFormat.Delta);
-                        if (this.split.LiveSegment(i) != 0.0 && (this.split.segments[i].BestSegment == 0.0 || this.split.LiveSegment(i) < this.split.segments[i].BestSegment))
+                        split.segments[i].TimeString = timeFormatter(split.RunDeltaAt(i), TimeFormat.Delta);
+                        if (split.LiveSegment(i) != 0.0 && (split.segments[i].BestSegment == 0.0 || split.LiveSegment(i) < split.segments[i].BestSegment))
                         {
                             if (Settings.Profile.RainbowSplits)
                             {
-                                this.split.segments[i].TimeColor = colors.SegRainbow;
+                                split.segments[i].TimeColor = colors.SegRainbow;
                             }
                             else
                             {
-                                this.split.segments[i].TimeColor = colors.SegBestSegment;
+                                split.segments[i].TimeColor = colors.SegBestSegment;
                             };
                         }
                         else if (num3 < 0.0)
                         {
                             if (num2 < 0.0)
                             {
-                                this.split.segments[i].TimeColor = colors.SegAheadGain;
+                                split.segments[i].TimeColor = colors.SegAheadGain;
                             }
                             else
                             {
-                                this.split.segments[i].TimeColor = colors.SegAheadLoss;
+                                split.segments[i].TimeColor = colors.SegAheadLoss;
                             }
                         }
                         else if (num2 > 0.0)
                         {
-                            this.split.segments[i].TimeColor = colors.SegBehindLoss;
+                            split.segments[i].TimeColor = colors.SegBehindLoss;
                         }
                         else
                         {
-                            this.split.segments[i].TimeColor = colors.SegBehindGain;
+                            split.segments[i].TimeColor = colors.SegBehindGain;
                         }
                     }
                     // If the split was missed...
-                    else if (this.split.segments[i].LiveTime == 0.0)
+                    else if (split.segments[i].LiveTime == 0.0)
                     {
-                        this.split.segments[i].TimeString = "-";
-                        this.split.segments[i].TimeColor = colors.SegMissingTime;
+                        split.segments[i].TimeString = "-";
+                        split.segments[i].TimeColor = colors.SegMissingTime;
                     }
                     // If there was no live time to compare splits to...
-                    else if (this.split.CompTime(i) == 0.0)
+                    else if (split.CompTime(i) == 0.0)
                     {
-                        this.split.segments[i].TimeString = this.timeFormatter(this.split.segments[i].LiveTime, TimeFormat.Short);
+                        split.segments[i].TimeString = timeFormatter(split.segments[i].LiveTime, TimeFormat.Short);
                         if (/*(i == 0 || this.split.segments[i - 1].LiveTime > 0.0) &&
                             (this.split.segments[i].BestSegment == 0.0) || this.split.LiveSegment(i) < this.split.segments[i].BestSegment*/
-                            this.split.LiveSegment(i) != 0.0 && (this.split.segments[i].BestSegment == 0.0 || this.split.LiveSegment(i) < this.split.segments[i].BestSegment))
+                            split.LiveSegment(i) != 0.0 && (split.segments[i].BestSegment == 0.0 || split.LiveSegment(i) < split.segments[i].BestSegment))
                         {
                             if (Settings.Profile.RainbowSplits)
                             {
-                                this.split.segments[i].TimeColor = colors.SegRainbow;
+                                split.segments[i].TimeColor = colors.SegRainbow;
                             }
                             else
                             {
-                                this.split.segments[i].TimeColor = colors.SegBestSegment;
+                                split.segments[i].TimeColor = colors.SegBestSegment;
                             };
                         }
                         else
                         {
-                            this.split.segments[i].TimeColor = colors.SegNewTime;
+                            split.segments[i].TimeColor = colors.SegNewTime;
                         }
                     }
                 }
-                else if (i == this.split.LiveIndex)
+                else if (i == split.LiveIndex)
                 {
-                    this.split.segments[i].TimeColor = colors.LiveSeg;
-                    if (this.split.CompTime(i) > 0.0)
+                    split.segments[i].TimeColor = colors.LiveSeg;
+                    if (split.CompTime(i) > 0.0)
                     {
-                        this.split.segments[i].TimeString = this.timeFormatter(this.split.CompTime(i), TimeFormat.Short); //changed
+                        split.segments[i].TimeString = timeFormatter(split.CompTime(i), TimeFormat.Short); //changed
                     }
                     else
                     {
-                        this.split.segments[i].TimeString = "-";
+                        split.segments[i].TimeString = "-";
                     }
                 }
                 else
                 {
-                    this.split.segments[i].TimeColor = colors.FutureSegTime;
-                    if (this.split.CompTime(i) > 0.0)
+                    split.segments[i].TimeColor = colors.FutureSegTime;
+                    if (split.CompTime(i) > 0.0)
                     {
-                        this.split.segments[i].TimeString = this.timeFormatter(this.split.CompTime(i), TimeFormat.Short);
+                        split.segments[i].TimeString = timeFormatter(split.CompTime(i), TimeFormat.Short);
                     }
                     else
                     {
-                        this.split.segments[i].TimeString = "-";
+                        split.segments[i].TimeString = "-";
                     }
                 }
-                this.split.segments[i].TimeWidth = MeasureDisplayStringWidth(this.split.segments[i].TimeString, this.timeFont);
+                split.segments[i].TimeWidth = MeasureDisplayStringWidth(split.segments[i].TimeString, timeFont);
             }
 
-            this.painter.RequestBackgroundRedraw();
+            painter.RequestBackgroundRedraw();
             base.Invalidate();
 
             // Updates the detailed view window columns things...
-            // 
-            if ((this.dview.segs.RowCount > 0) && (this.dview.finalSeg.RowCount > 1))
+            //
+            if ((dview.segs.RowCount > 0) && (dview.finalSeg.RowCount > 1))
             {
-                this.dview.Deltas.Clear();
-                for (int j = 0; j < this.dview.segs.RowCount; ++j)
+                dview.Deltas.Clear();
+                for (int j = 0; j < dview.segs.RowCount; ++j)
                 {
                     DataGridViewRow row;
-                    if (j < (this.dview.segs.RowCount - 1))
-                        row = this.dview.segs.Rows[j + 1];
+                    if (j < (dview.segs.RowCount - 1))
+                        row = dview.segs.Rows[j + 1];
                     else
-                        row = this.dview.finalSeg.Rows[1];
+                        row = dview.finalSeg.Rows[1];
 
                     DataGridViewCell oldTimeCell = row.Cells[1];
                     DataGridViewCell bestTimeCell = row.Cells[2];
@@ -2239,18 +2240,18 @@ namespace WSplitTimer
                     DataGridViewCell liveTimeCell = row.Cells[4];
                     DataGridViewCell deltaCell = row.Cells[5];
 
-                    double oldTime = this.split.segments[j].OldTime;
-                    double bestTime = this.split.segments[j].BestTime;
-                    double sumOfBestsTime = this.split.SumOfBests(j);
-                    double liveTime = this.split.segments[j].LiveTime;
-                    double oldDelta = this.split.LastDelta(j);
+                    double oldTime = split.segments[j].OldTime;
+                    double bestTime = split.segments[j].BestTime;
+                    double sumOfBestsTime = split.SumOfBests(j);
+                    double liveTime = split.segments[j].LiveTime;
+                    double oldDelta = split.LastDelta(j);
 
-                    double secs = this.split.RunDeltaAt(j);
+                    double secs = split.RunDeltaAt(j);
 
                     // Puts oldTime in the "Old" column
                     if (oldTime > 0.0)
-                        oldTimeCell.Value = this.timeFormatter(oldTime, TimeFormat.Short);
-                    else if (this.split.LastSegment.OldTime > 0.0)
+                        oldTimeCell.Value = timeFormatter(oldTime, TimeFormat.Short);
+                    else if (split.LastSegment.OldTime > 0.0)
                         oldTimeCell.Value = "-";
                     else
                         oldTimeCell.Value = null;
@@ -2258,22 +2259,22 @@ namespace WSplitTimer
                     // Puts bestTime in "Best" column
                     if (bestTime > 0.0)
                     {
-                        bestTimeCell.Value = this.timeFormatter(bestTime, TimeFormat.Short);
-                        if ((this.split.segments[j].BestSegment > 0.0) && Settings.Profile.DViewShowSegs)
+                        bestTimeCell.Value = timeFormatter(bestTime, TimeFormat.Short);
+                        if ((split.segments[j].BestSegment > 0.0) && Settings.Profile.DViewShowSegs)
                         {
                             object obj2 = bestTimeCell.Value;
-                            bestTimeCell.Value = string.Concat(new object[] { obj2, " [", this.timeFormatter(this.split.segments[j].BestSegment, TimeFormat.Short), "]" });
+                            bestTimeCell.Value = string.Concat(new object[] { obj2, " [", timeFormatter(split.segments[j].BestSegment, TimeFormat.Short), "]" });
                         }
                     }
-                    else if (this.split.LastSegment.BestTime > 0.0)
+                    else if (split.LastSegment.BestTime > 0.0)
                         bestTimeCell.Value = "-";
                     else
                         bestTimeCell.Value = null;
 
                     // Puts sumOfBestsTime in "Sum of Bests" column
                     if (sumOfBestsTime > 0.0)
-                        sumOfBestsTimeCell.Value = this.timeFormatter(sumOfBestsTime, TimeFormat.Short);
-                    else if (this.split.SumOfBests(this.split.LastIndex) > 0.0)
+                        sumOfBestsTimeCell.Value = timeFormatter(sumOfBestsTime, TimeFormat.Short);
+                    else if (split.SumOfBests(split.LastIndex) > 0.0)
                         sumOfBestsTimeCell.Value = "-";
                     else
                         sumOfBestsTimeCell.Value = null;
@@ -2281,20 +2282,20 @@ namespace WSplitTimer
                     // Puts liveTime in "Live" column
                     if (liveTime > 0.0)
                     {
-                        liveTimeCell.Value = this.timeFormatter(liveTime, TimeFormat.Short);
-                        if ((this.split.LiveSegment(j) > 0.0) && Settings.Profile.DViewShowSegs)
+                        liveTimeCell.Value = timeFormatter(liveTime, TimeFormat.Short);
+                        if ((split.LiveSegment(j) > 0.0) && Settings.Profile.DViewShowSegs)
                         {
                             object obj3 = liveTimeCell.Value;
-                            liveTimeCell.Value = string.Concat(new object[] { obj3, " [", this.timeFormatter(this.split.LiveSegment(j), TimeFormat.Short), "]" });
+                            liveTimeCell.Value = string.Concat(new object[] { obj3, " [", timeFormatter(split.LiveSegment(j), TimeFormat.Short), "]" });
                         }
                     }
-                    else if ((j < this.split.LiveIndex) && (this.timer.ElapsedTicks > 0L))
+                    else if ((j < split.LiveIndex) && (timer.ElapsedTicks > 0L))
                         liveTimeCell.Value = "-";
                     else
                         liveTimeCell.Value = null;
 
                     // If the current row corresponds to the current split
-                    if (j == this.split.LiveIndex)
+                    if (j == split.LiveIndex)
                     {
                         foreach (DataGridViewCell cell in row.Cells)
                         {
@@ -2312,17 +2313,17 @@ namespace WSplitTimer
                         }
 
                         // If the current row is before the current split and the timer is running
-                        if ((j < this.split.LiveIndex) && (this.timer.ElapsedTicks > 0L))
+                        if ((j < split.LiveIndex) && (timer.ElapsedTicks > 0L))
                         {
-                            if ((liveTime > 0.0) && (this.split.CompTime(j) > 0.0))
+                            if ((liveTime > 0.0) && (split.CompTime(j) > 0.0))
                             {
-                                deltaCell.Value = this.timeFormatter(secs, TimeFormat.Delta);
+                                deltaCell.Value = timeFormatter(secs, TimeFormat.Delta);
 
-                                liveTimeCell.Style.ForeColor = this.getDViewDeltaColor(secs, secs);
-                                if (this.split.LiveSegment(j) > 0.0 && (this.split.segments[j].BestSegment == 0.0 || this.split.LiveSegment(j) < this.split.segments[j].BestSegment))
+                                liveTimeCell.Style.ForeColor = getDViewDeltaColor(secs, secs);
+                                if (split.LiveSegment(j) > 0.0 && (split.segments[j].BestSegment == 0.0 || split.LiveSegment(j) < split.segments[j].BestSegment))
                                     deltaCell.Style.ForeColor = ColorSettings.Profile.UsedDViewSegBestSegment;
                                 else
-                                    deltaCell.Style.ForeColor = this.getDViewDeltaColor(secs, oldDelta);
+                                    deltaCell.Style.ForeColor = getDViewDeltaColor(secs, oldDelta);
                             }
                             else
                             {
@@ -2335,124 +2336,124 @@ namespace WSplitTimer
                     }
 
                     if (secs != 0.0)
-                        this.dview.Deltas.Add(secs);
+                        dview.Deltas.Add(secs);
                     else
-                        this.dview.Deltas.Add(0.0);
+                        dview.Deltas.Add(0.0);
                 }
 
-                if (this.split.RunTitle != "")
-                    this.dview.segs.Rows[0].Cells[0].Value = this.split.RunTitle + "   Goal: " + this.split.RunGoal;
+                if (split.RunTitle != "")
+                    dview.segs.Rows[0].Cells[0].Value = split.RunTitle + "   Goal: " + split.RunGoal;
                 else
-                    this.dview.segs.Rows[0].Cells[0].Value = "Segment";
-                this.dview.segs.DefaultCellStyle.SelectionForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
+                    dview.segs.Rows[0].Cells[0].Value = "Segment";
+                dview.segs.DefaultCellStyle.SelectionForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
 
-                if (this.split.ComparingType == Split.CompareType.Old)
+                if (split.ComparingType == RunSplits.CompareType.Old)
                 {
-                    this.dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
-                    this.dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
-                    this.dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
+                    dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
                 }
-                else if (this.split.ComparingType == Split.CompareType.Best)
+                else if (split.ComparingType == RunSplits.CompareType.Best)
                 {
-                    this.dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
-                    this.dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
-                    this.dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
+                    dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
                 }
                 else
                 {
-                    this.dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
-                    this.dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
-                    this.dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
+                    dview.segs.Columns[1].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[2].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                    dview.segs.Columns[3].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegCurrentText;
                 }
-                this.dview.segs.Columns[0].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
-                this.dview.finalSeg.Columns[0].DefaultCellStyle.ForeColor = this.dview.segs.Columns[0].DefaultCellStyle.ForeColor;
-                this.dview.finalSeg.Columns[1].DefaultCellStyle.ForeColor = this.dview.segs.Columns[1].DefaultCellStyle.ForeColor;
-                this.dview.finalSeg.Columns[2].DefaultCellStyle.ForeColor = this.dview.segs.Columns[2].DefaultCellStyle.ForeColor;
-                this.dview.finalSeg.Columns[3].DefaultCellStyle.ForeColor = this.dview.segs.Columns[3].DefaultCellStyle.ForeColor;
+                dview.segs.Columns[0].DefaultCellStyle.ForeColor = ColorSettings.Profile.UsedDViewSegDefaultText;
+                dview.finalSeg.Columns[0].DefaultCellStyle.ForeColor = dview.segs.Columns[0].DefaultCellStyle.ForeColor;
+                dview.finalSeg.Columns[1].DefaultCellStyle.ForeColor = dview.segs.Columns[1].DefaultCellStyle.ForeColor;
+                dview.finalSeg.Columns[2].DefaultCellStyle.ForeColor = dview.segs.Columns[2].DefaultCellStyle.ForeColor;
+                dview.finalSeg.Columns[3].DefaultCellStyle.ForeColor = dview.segs.Columns[3].DefaultCellStyle.ForeColor;
 
-                this.dview.setDeltaPoints();
-                this.dview.updateColumns();
+                dview.setDeltaPoints();
+                dview.updateColumns();
 
                 int num10 = Math.Max(Settings.Profile.DisplaySegs, 2);
-                int liveIndex = this.split.LiveIndex;
+                int liveIndex = split.LiveIndex;
                 if (num10 < 3)
                 {
-                    int num13 = this.split.LiveIndex;
+                    int num13 = split.LiveIndex;
                 }
-                this.dview.segs.Height = Math.Max(2, Math.Min(num10, this.dview.segs.RowCount)) * this.dview.segs.RowTemplate.Height;
-                if (this.dview.segs.RowCount > 1)
+                dview.segs.Height = Math.Max(2, Math.Min(num10, dview.segs.RowCount)) * dview.segs.RowTemplate.Height;
+                if (dview.segs.RowCount > 1)
                 {
                     int num11 = 3;
                     if (Settings.Profile.DisplaySegs < 4)
                     {
                         num11 = 2;
                     }
-                    this.dview.segs.FirstDisplayedScrollingRowIndex = Math.Min((int)(this.dview.segs.RowCount - 1), (int)(1 + Math.Max(0, (this.split.LiveIndex - num10) + num11)));
+                    dview.segs.FirstDisplayedScrollingRowIndex = Math.Min((int)(dview.segs.RowCount - 1), (int)(1 + Math.Max(0, (split.LiveIndex - num10) + num11)));
                 }
-                this.dview.finalSeg.FirstDisplayedScrollingRowIndex = 1;
-                for (int k = 1; k < this.dview.finalSeg.Columns.Count; k++)
+                dview.finalSeg.FirstDisplayedScrollingRowIndex = 1;
+                for (int k = 1; k < dview.finalSeg.Columns.Count; k++)
                 {
-                    this.dview.segs.AutoResizeColumn(k, DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
-                    this.dview.finalSeg.AutoResizeColumn(k, DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
-                    this.dview.segs.Columns[k].Width = Math.Max(this.dview.segs.Columns[k].Width, this.dview.finalSeg.Columns[k].Width);
-                    this.dview.finalSeg.Columns[k].Width = this.dview.segs.Columns[k].Width;
+                    dview.segs.AutoResizeColumn(k, DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                    dview.finalSeg.AutoResizeColumn(k, DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                    dview.segs.Columns[k].Width = Math.Max(dview.segs.Columns[k].Width, dview.finalSeg.Columns[k].Width);
+                    dview.finalSeg.Columns[k].Width = dview.segs.Columns[k].Width;
                 }
             }
-            this.dview.resetHeight();
+            dview.resetHeight();
         }
 
         private void updateDisplay()
         {
             if (Settings.Profile.CompareAgainst == 0)
-                this.split.CompType = Split.CompareType.Fastest;
+                split.CompType = RunSplits.CompareType.Fastest;
             else if (Settings.Profile.CompareAgainst == 1)
-                this.split.CompType = Split.CompareType.Old;
+                split.CompType = RunSplits.CompareType.Old;
             else if (Settings.Profile.CompareAgainst == 2)
-                this.split.CompType = Split.CompareType.Best;
+                split.CompType = RunSplits.CompareType.Best;
             else if (Settings.Profile.CompareAgainst == 3)
-                this.split.CompType = Split.CompareType.SumOfBests;
-            this.updateDetailed();
+                split.CompType = RunSplits.CompareType.SumOfBests;
+            updateDetailed();
             base.Invalidate();
         }
 
         protected override void WndProc(ref Message m)
         {
-            if (m.Msg == 0x312 && !this.modalWindowOpened)
+            if (m.Msg == 0x312 && !modalWindowOpened)
             {
                 switch (m.WParam.ToInt32())
                 {
                     case 0x9d82:    // Split
-                        this.timerControl();
+                        timerControl();
                         break;
 
                     case 0x9d83:    // Pause
-                        this.pauseResume();
+                        pauseResume();
                         break;
 
                     case 0x9d84:    // Stop
-                        this.StopSplits();
+                        StopSplits();
                         break;
 
                     case 0x9d85:    // Reset
-                        this.ResetSplits();
+                        ResetSplits();
                         break;
 
                     case 0x9d86:    // Previous
-                        this.prevStage();
+                        prevStage();
                         break;
 
                     case 0x9d87:    // Next
-                        this.nextStage();
+                        NextStage();
                         break;
 
                     case 0x9d88:    // Switch Comparison Type
-                        this.SwitchComparisonType();
+                        SwitchComparisonType();
                         break;
 
                     case 0x9d89:    // Toggle Global Hotkeys
                         Settings.Profile.EnabledHotkeys = !Settings.Profile.EnabledHotkeys;
-                        this.setHotkeys();
-                        this.painter.RequestBackgroundRedraw();
+                        setHotkeys();
+                        painter.RequestBackgroundRedraw();
                         base.Invalidate();
                         break;
                 }
@@ -2462,17 +2463,17 @@ namespace WSplitTimer
 
         protected override void OnDragDrop(DragEventArgs drgevent)
         {
-            if (!this.modalWindowOpened)
+            if (!modalWindowOpened)
             {
-                this.split.RunFile = ((string[])drgevent.Data.GetData(DataFormats.FileDrop, false)).First<string>();
-                this.loadFile();
+                split.RunFile = ((string[])drgevent.Data.GetData(DataFormats.FileDrop, false)).First<string>();
+                LoadFile();
             }
             base.OnDragDrop(drgevent);
         }
 
         protected override void OnDragEnter(DragEventArgs drgevent)
         {
-            if (!this.modalWindowOpened)
+            if (!modalWindowOpened)
             {
                 if (drgevent.Data.GetDataPresent(DataFormats.FileDrop))
                     drgevent.Effect = DragDropEffects.Copy;
@@ -2485,9 +2486,9 @@ namespace WSplitTimer
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            this.clearHotkeys();
+            clearHotkeys();
             Settings.Profile.WindowPosition = base.Location;
-            Settings.Profile.LastFile = this.split.RunFile;
+            Settings.Profile.LastFile = split.RunFile;
             Settings.Profile.Save();
             ColorSettings.Profile.Save();
             base.OnFormClosed(e);
@@ -2505,33 +2506,33 @@ namespace WSplitTimer
                     x += ((Control)sender).Location.X;
                     y += ((Control)sender).Location.Y;
                 }*/
-                if ((this.currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((this.clockRect.Right + this.wideSegWidth) - 3))) < 4))
+                if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((clockRect.Right + wideSegWidth) - 3))) < 4))
                 {
-                    this.wideSegResizing = true;
-                    this.wideSegResizeWidth = this.wideSegWidthBase;
-                    this.wideSegX = x;
+                    wideSegResizing = true;
+                    wideSegResizeWidth = wideSegWidthBase;
+                    wideSegX = x;
                     Cursor.Current = Cursors.SizeWE;
                 }
-                else if ((this.currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
+                else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
                 {
-                    this.wideResizing = true;
-                    this.wideResizingX = x;
+                    wideResizing = true;
+                    wideResizingX = x;
                     Cursor.Current = Cursors.SizeWE;
                 }
-                else if ((this.currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (this.clockRect.Top - 1))) < 4))
+                else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (clockRect.Top - 1))) < 4))
                 {
-                    this.detailResizing = true;
-                    this.detailResizingY = y;
+                    detailResizing = true;
+                    detailResizingY = y;
                     Cursor.Current = Cursors.SizeNS;
                 }
-                else if ((x >= (this.clockRect.Right - 5)) && (x <= this.clockRect.Right))
+                else if ((x >= (clockRect.Right - 5)) && (x <= clockRect.Right))
                 {
-                    if (((y >= (this.clockRect.Bottom - 5)) && (y <= this.clockRect.Bottom)) && (this.currentDispMode != DisplayMode.Wide))
+                    if (((y >= (clockRect.Bottom - 5)) && (y <= clockRect.Bottom)) && (currentDispMode != DisplayMode.Wide))
                     {
                         Cursor.Current = Cursors.SizeNWSE;
                         wParam = 0x11;
                     }
-                    else if (((y <= (this.clockRect.Top + 5)) && (y >= this.clockRect.Top)) && (this.currentDispMode != DisplayMode.Wide))
+                    else if (((y <= (clockRect.Top + 5)) && (y >= clockRect.Top)) && (currentDispMode != DisplayMode.Wide))
                     {
                         Cursor.Current = Cursors.SizeNESW;
                         wParam = 14;
@@ -2541,17 +2542,17 @@ namespace WSplitTimer
                         Cursor.Current = Cursors.SizeWE;
                         wParam = 11;
                     }
-                    this.MinimumSize = new Size((base.Width - this.clockRect.Width) + this.clockMinimumSize.Width, (base.Height - this.clockRect.Height) + this.clockMinimumSize.Height);
-                    this.clockResize = true;
+                    MinimumSize = new Size((base.Width - clockRect.Width) + clockMinimumSize.Width, (base.Height - clockRect.Height) + clockMinimumSize.Height);
+                    clockResize = true;
                 }
-                else if ((x <= (this.clockRect.Left + 5)) && (x >= this.clockRect.Left))
+                else if ((x <= (clockRect.Left + 5)) && (x >= clockRect.Left))
                 {
-                    if (((y >= (this.clockRect.Bottom - 5)) && (y <= this.clockRect.Bottom)) && (this.currentDispMode != DisplayMode.Wide))
+                    if (((y >= (clockRect.Bottom - 5)) && (y <= clockRect.Bottom)) && (currentDispMode != DisplayMode.Wide))
                     {
                         Cursor.Current = Cursors.SizeNESW;
                         wParam = 0x10;
                     }
-                    else if (((y <= (this.clockRect.Top + 5)) && (y >= this.clockRect.Top)) && (this.currentDispMode != DisplayMode.Wide))
+                    else if (((y <= (clockRect.Top + 5)) && (y >= clockRect.Top)) && (currentDispMode != DisplayMode.Wide))
                     {
                         Cursor.Current = Cursors.SizeNWSE;
                         wParam = 13;
@@ -2561,22 +2562,22 @@ namespace WSplitTimer
                         Cursor.Current = Cursors.SizeWE;
                         wParam = 10;
                     }
-                    this.MinimumSize = new Size((base.Width - this.clockRect.Width) + this.clockMinimumSize.Width, (base.Height - this.clockRect.Height) + this.clockMinimumSize.Height);
-                    this.clockResize = true;
+                    MinimumSize = new Size((base.Width - clockRect.Width) + clockMinimumSize.Width, (base.Height - clockRect.Height) + clockMinimumSize.Height);
+                    clockResize = true;
                 }
-                else if (((this.currentDispMode != DisplayMode.Wide) && (y >= (this.clockRect.Bottom - 5))) && (y <= this.clockRect.Bottom))
+                else if (((currentDispMode != DisplayMode.Wide) && (y >= (clockRect.Bottom - 5))) && (y <= clockRect.Bottom))
                 {
                     Cursor.Current = Cursors.SizeNS;
                     wParam = 15;
-                    this.MinimumSize = new Size((base.Width - this.clockRect.Width) + this.clockMinimumSize.Width, (base.Height - this.clockRect.Height) + this.clockMinimumSize.Height);
-                    this.clockResize = true;
+                    MinimumSize = new Size((base.Width - clockRect.Width) + clockMinimumSize.Width, (base.Height - clockRect.Height) + clockMinimumSize.Height);
+                    clockResize = true;
                 }
-                else if (((this.currentDispMode != DisplayMode.Wide) && (y <= (this.clockRect.Top + 5))) && (y >= this.clockRect.Top))
+                else if (((currentDispMode != DisplayMode.Wide) && (y <= (clockRect.Top + 5))) && (y >= clockRect.Top))
                 {
                     Cursor.Current = Cursors.SizeNS;
                     wParam = 12;
-                    this.MinimumSize = new Size((base.Width - this.clockRect.Width) + this.clockMinimumSize.Width, (base.Height - this.clockRect.Height) + this.clockMinimumSize.Height);
-                    this.clockResize = true;
+                    MinimumSize = new Size((base.Width - clockRect.Width) + clockMinimumSize.Width, (base.Height - clockRect.Height) + clockMinimumSize.Height);
+                    clockResize = true;
                 }
                 else
                     wParam = 2;
@@ -2593,7 +2594,7 @@ namespace WSplitTimer
         protected override void OnMouseMove(MouseEventArgs e)
         {
             if ((Control.MouseButtons & MouseButtons.Left) != MouseButtons.None)
-                this.clockResize = false;
+                clockResize = false;
 
             int x = e.X;
             int y = e.Y;
@@ -2603,27 +2604,26 @@ namespace WSplitTimer
                 y += ((Control)sender).Location.Y;
             }*/
 
-            if (this.wideSegResizing)
+            if (wideSegResizing)
             {
-                this.wideSegWidthBase = Math.Max(60, this.wideSegResizeWidth + (x - this.wideSegX));
-                this.setDisplay(DisplayMode.Wide);
+                wideSegWidthBase = Math.Max(60, wideSegResizeWidth + (x - wideSegX));
+                setDisplay(DisplayMode.Wide);
             }
-
-            else if (this.detailResizing)
+            else if (detailResizing)
             {
-                if (y < (this.detailResizingY + this.segHeight))
+                if (y < (detailResizingY + segHeight))
                 {
-                    if ((y <= (this.detailResizingY - this.segHeight)) && (Settings.Profile.DisplaySegs > 2))
+                    if ((y <= (detailResizingY - segHeight)) && (Settings.Profile.DisplaySegs > 2))
                     {
-                        if (!Settings.Profile.DisplayBlankSegs && (Settings.Profile.DisplaySegs > this.split.Count))
+                        if (!Settings.Profile.DisplayBlankSegs && (Settings.Profile.DisplaySegs > split.Count))
                         {
-                            Settings.Profile.DisplaySegs = Math.Min(this.split.Count - 1, 40);
-                            this.updateDetailed();
+                            Settings.Profile.DisplaySegs = Math.Min(split.Count - 1, 40);
+                            updateDetailed();
                         }
                         else
-                            this.showSegsDec();
+                            showSegsDec();
 
-                        this.detailResizingY -= this.segHeight;
+                        detailResizingY -= segHeight;
                     }
                 }
                 else
@@ -2632,33 +2632,32 @@ namespace WSplitTimer
                     if (Settings.Profile.DisplayBlankSegs)
                         num3 = 40;
                     else
-                        num3 = Math.Min(this.split.Count, 40);
+                        num3 = Math.Min(split.Count, 40);
 
                     if (Settings.Profile.DisplaySegs < num3)
                     {
-                        this.showSegsInc();
-                        this.detailResizingY += this.segHeight;
+                        showSegsInc();
+                        detailResizingY += segHeight;
                     }
                 }
             }
-
-            else if (this.wideResizing)
+            else if (wideResizing)
             {
-                if (x < (this.wideResizingX + this.wideSegWidth))
+                if (x < (wideResizingX + wideSegWidth))
                 {
-                    if ((x <= (this.wideResizingX - this.wideSegWidth)) && (Settings.Profile.WideSegs > 1))
+                    if ((x <= (wideResizingX - wideSegWidth)) && (Settings.Profile.WideSegs > 1))
                     {
-                        if (!Settings.Profile.WideSegBlanks && (Settings.Profile.WideSegs > this.split.Count))
+                        if (!Settings.Profile.WideSegBlanks && (Settings.Profile.WideSegs > split.Count))
                         {
-                            Settings.Profile.WideSegs = Math.Min(this.split.Count - 1, 20);
+                            Settings.Profile.WideSegs = Math.Min(split.Count - 1, 20);
                         }
                         else
                         {
                             Settings settings2 = Settings.Profile;
                             settings2.WideSegs--;
                         }
-                        this.setDisplay(DisplayMode.Wide);
-                        this.wideResizingX -= this.wideSegWidth;
+                        setDisplay(DisplayMode.Wide);
+                        wideResizingX -= wideSegWidth;
                     }
                 }
                 else
@@ -2670,51 +2669,44 @@ namespace WSplitTimer
                     }
                     else
                     {
-                        num4 = Math.Min(this.split.Count, 20);
+                        num4 = Math.Min(split.Count, 20);
                     }
                     if (Settings.Profile.WideSegs < num4)
                     {
                         Settings settings1 = Settings.Profile;
                         settings1.WideSegs++;
-                        this.wideResizingX += this.wideSegWidth;
-                        this.setDisplay(DisplayMode.Wide);
+                        wideResizingX += wideSegWidth;
+                        setDisplay(DisplayMode.Wide);
                     }
                 }
             }
-
-            else if ((this.currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((this.clockRect.Right + this.wideSegWidth) - 3))) < 4))
+            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((clockRect.Right + wideSegWidth) - 3))) < 4))
                 Cursor.Current = Cursors.SizeWE;
-
-            else if ((this.currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
+            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
                 Cursor.Current = Cursors.SizeWE;
-
-            else if ((this.currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (this.clockRect.Top - 1))) < 4))
+            else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (clockRect.Top - 1))) < 4))
                 Cursor.Current = Cursors.SizeNS;
-
-            else if ((x >= (this.clockRect.Right - 5)) && (x <= this.clockRect.Right))
+            else if ((x >= (clockRect.Right - 5)) && (x <= clockRect.Right))
             {
-                if (((y >= (this.clockRect.Bottom - 5)) && (y <= this.clockRect.Bottom)) && (this.currentDispMode != DisplayMode.Wide))
+                if (((y >= (clockRect.Bottom - 5)) && (y <= clockRect.Bottom)) && (currentDispMode != DisplayMode.Wide))
                     Cursor.Current = Cursors.SizeNWSE;
-                else if (((y <= (this.clockRect.Top + 5)) && (y >= this.clockRect.Top)) && (this.currentDispMode != DisplayMode.Wide))
+                else if (((y <= (clockRect.Top + 5)) && (y >= clockRect.Top)) && (currentDispMode != DisplayMode.Wide))
                     Cursor.Current = Cursors.SizeNESW;
                 else
                     Cursor.Current = Cursors.SizeWE;
             }
-
-            else if ((x <= (this.clockRect.Left + 5)) && (x >= this.clockRect.Left))
+            else if ((x <= (clockRect.Left + 5)) && (x >= clockRect.Left))
             {
-                if (((y >= (this.clockRect.Bottom - 5)) && (y <= this.clockRect.Bottom)) && (this.currentDispMode != DisplayMode.Wide))
+                if (((y >= (clockRect.Bottom - 5)) && (y <= clockRect.Bottom)) && (currentDispMode != DisplayMode.Wide))
                     Cursor.Current = Cursors.SizeNESW;
-                else if (((y <= (this.clockRect.Top + 5)) && (y >= this.clockRect.Top)) && (this.currentDispMode != DisplayMode.Wide))
+                else if (((y <= (clockRect.Top + 5)) && (y >= clockRect.Top)) && (currentDispMode != DisplayMode.Wide))
                     Cursor.Current = Cursors.SizeNWSE;
                 else
                     Cursor.Current = Cursors.SizeWE;
             }
-
-            else if (((y >= (this.clockRect.Bottom - 5)) && (y <= this.clockRect.Bottom)) && (this.currentDispMode != DisplayMode.Wide))
+            else if (((y >= (clockRect.Bottom - 5)) && (y <= clockRect.Bottom)) && (currentDispMode != DisplayMode.Wide))
                 Cursor.Current = Cursors.SizeNS;
-
-            else if (((this.currentDispMode != DisplayMode.Wide) && (y <= (this.clockRect.Top + 5))) && (y >= this.clockRect.Top))
+            else if (((currentDispMode != DisplayMode.Wide) && (y <= (clockRect.Top + 5))) && (y >= clockRect.Top))
                 Cursor.Current = Cursors.SizeNS;
 
             base.OnMouseMove(e);
@@ -2722,28 +2714,28 @@ namespace WSplitTimer
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            this.clockResize = false;
-            this.wideSegResizing = false;
-            this.detailResizing = false;
-            this.wideResizing = false;
-            this.MinimumSize = new Size(0, 0);
+            clockResize = false;
+            wideSegResizing = false;
+            detailResizing = false;
+            wideResizing = false;
+            MinimumSize = new Size(0, 0);
             base.OnMouseUp(e);
         }
 
         protected override void OnResize(EventArgs e)
         {
-            if (this.clockResize)
-                this.clockRect.Size = (base.Size - this.MinimumSize) + this.clockMinimumSize;
+            if (clockResize)
+                clockRect.Size = (base.Size - MinimumSize) + clockMinimumSize;
 
-            if (this.currentDispMode == DisplayMode.Detailed)
-                this.detailPreferredSize = this.clockRect.Size;
-            else if ((this.currentDispMode != DisplayMode.Wide) && (this.currentDispMode != DisplayMode.Null))
+            if (currentDispMode == DisplayMode.Detailed)
+                detailPreferredSize = clockRect.Size;
+            else if ((currentDispMode != DisplayMode.Wide) && (currentDispMode != DisplayMode.Null))
             {
-                int width = this.clockRect.Width;
-                if ((Settings.Profile.SegmentIcons > 1) && (this.currentDispMode == DisplayMode.Compact))
-                    width -= this.clockMinimumSize.Width - this.clockMinimumSizeAbsolute.Width;
+                int width = clockRect.Width;
+                if ((Settings.Profile.SegmentIcons > 1) && (currentDispMode == DisplayMode.Compact))
+                    width -= clockMinimumSize.Width - clockMinimumSizeAbsolute.Width;
 
-                Settings.Profile.ClockSize = new Size(width, this.clockRect.Height);
+                Settings.Profile.ClockSize = new Size(width, clockRect.Height);
             }
 
             if (base.WindowState == FormWindowState.Maximized)
@@ -2752,13 +2744,12 @@ namespace WSplitTimer
             base.OnResize(e);
         }
 
-
         // Functions created by Nitrofski
         // ------------------------------
 
         private void menuItemStartAt_Click(object sender, EventArgs e)
         {
-            if (this.timer.IsRunning)
+            if (timer.IsRunning)
             {
                 menuItemStartAt.Enabled = false;
                 return;
@@ -2766,61 +2757,60 @@ namespace WSplitTimer
 
             StartAtDialog dialog = new StartAtDialog();
             base.TopMost = false;
-            this.dview.TopMost = false;
-            this.modalWindowOpened = true;
+            dview.TopMost = false;
+            modalWindowOpened = true;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                StartAt(Convert.ToInt64(this.timeParse(dialog.StartingTime) * 10000000.0), dialog.UseDelay);
+                StartAt(Convert.ToInt64(timeParse(dialog.StartingTime) * 10000000.0), dialog.UseDelay);
                 //      Not changed... Possible problems with locale settings...
             }
 
             base.TopMost = Settings.Profile.OnTop;
-            this.dview.TopMost = Settings.Profile.DViewOnTop;
-            this.modalWindowOpened = false;
+            dview.TopMost = Settings.Profile.DViewOnTop;
+            modalWindowOpened = false;
         }
 
         private bool promptForSave()
         {
-            if (this.split.UnsavedSplit)
+            if (split.UnsavedSplit)
             {
-                this.modalWindowOpened = true;
+                modalWindowOpened = true;
                 DialogResult result = MessageBoxEx.Show(
                     "Your splits have been updated but not yet saved.\n" +
                     "Do you want to save your splits now?",
                     "Save splits?", MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
-                this.modalWindowOpened = false;
+                modalWindowOpened = false;
 
                 if (result == DialogResult.Cancel)
                     return false;
                 if (result == DialogResult.Yes)
                 {
-                    if (this.split.RunFile == null)
-                        this.saveAs();
+                    if (split.RunFile == null)
+                        saveAs();
                     else
-                        this.saveFile();
+                        saveFile();
                 }
-                this.split.UnsavedSplit = false;
+                split.UnsavedSplit = false;
             }
-
-            else if (this.split.NeedUpdate(Settings.Profile.BestAsOverall))
+            else if (split.NeedUpdate(Settings.Profile.BestAsOverall))
             {
-                this.modalWindowOpened = true;
+                modalWindowOpened = true;
                 DialogResult result = MessageBoxEx.Show(
                     "You have beaten some of your best times.\n" +
                     "Do you want to update and save your splits now?",
                     "Save splits?", MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
-                this.modalWindowOpened = false;
+                modalWindowOpened = false;
 
                 if (result == DialogResult.Cancel)
                     return false;
                 if (result == DialogResult.Yes)
                 {
-                    if (this.split.RunFile == null)
-                        this.saveAs();
+                    if (split.RunFile == null)
+                        saveAs();
                     else
-                        this.saveFile();
+                        saveFile();
                 }
             }
             return true;
@@ -2828,65 +2818,65 @@ namespace WSplitTimer
 
         private void ResetSplits()
         {
-            if (this.split.NeedUpdate(Settings.Profile.BestAsOverall))
+            if (split.NeedUpdate(Settings.Profile.BestAsOverall))
             {
-                this.modalWindowOpened = true;
+                modalWindowOpened = true;
                 DialogResult result = MessageBoxEx.Show(this,
                     "You have beaten some of your best times.\n" +
                     "Do you want to update them?",
                     "Update times?", MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
-                this.modalWindowOpened = false;
+                modalWindowOpened = false;
 
                 if (result == DialogResult.Yes)
                 {
-                    this.split.UpdateBest(Settings.Profile.BestAsOverall);
-                    this.split.UnsavedSplit = true;
+                    split.UpdateBest(Settings.Profile.BestAsOverall);
+                    split.UnsavedSplit = true;
                 }
                 if (result != DialogResult.Cancel)
                 {
-                    this.InitializeDisplay();
+                    InitializeDisplay();
                 }
             }
             else
-                this.InitializeDisplay();
+                InitializeDisplay();
         }
 
         private void StopSplits()
         {
-            if (this.split.NeedUpdate(Settings.Profile.BestAsOverall))
+            if (split.NeedUpdate(Settings.Profile.BestAsOverall))
             {
-                this.split.UpdateBest(Settings.Profile.BestAsOverall);
-                this.split.UnsavedSplit = true;
+                split.UpdateBest(Settings.Profile.BestAsOverall);
+                split.UnsavedSplit = true;
             }
-            this.InitializeDisplay();
+            InitializeDisplay();
         }
 
         private void StartAt(long startingTicks, bool useDelay)
         {
             // If the refreshing stopwatch is running
-            if (this.stopwatch.Enabled)
+            if (stopwatch.Enabled)
             {
                 throw new InvalidOperationException(
                     "Trying to start the timer with a starting time, but timer is already running.");
             }
 
             // If the split aren't done, so if the timer isn't running
-            else if (!this.split.Done && (this.startDelay == null))
+            else if (!split.Done && (startDelay == null))
             {
                 // If the timer had not been started yet
-                if (this.timer.ElapsedTicks == 0L)
+                if (timer.ElapsedTicks == 0L)
                 {
                     // If it wasn't running
-                    if (!this.timer.IsRunning)
+                    if (!timer.IsRunning)
                     {
-                        this.InitializeDisplay();
+                        InitializeDisplay();
                     }
-                    this.startTimer(startingTicks, useDelay);
+                    startTimer(startingTicks, useDelay);
 
-                    this.menuItemStartAt.Enabled = false;
-                    this.stopButton.Enabled = true;
-                    this.resetButton.Enabled = true;
+                    menuItemStartAt.Enabled = false;
+                    stopButton.Enabled = true;
+                    resetButton.Enabled = true;
                 }
 
                 // If the timer was paused
@@ -2895,7 +2885,7 @@ namespace WSplitTimer
                     throw new InvalidOperationException(
                     "Trying to start the timer with a starting time, but timer is paused.");
                 }
-                this.stopwatch.Enabled = true;
+                stopwatch.Enabled = true;
             }
         }
 
@@ -2928,16 +2918,16 @@ namespace WSplitTimer
 
         private class Painter
         {
-            private WSplit wsplit;
+            private readonly WSplit wsplit;
 
             private string timeStringAbsPart;
             private string timeStringDecPart;
 
-            SizeF clockTimeAbsSize;
-            SizeF clockTimeDecSize;
-            SizeF clockTimeTotalSize;
+            private SizeF clockTimeAbsSize;
+            private SizeF clockTimeDecSize;
+            private SizeF clockTimeTotalSize;
 
-            float clockScale;
+            private float clockScale;
 
             private Bitmap background;
             private Bitmap bgImage;
@@ -2960,51 +2950,19 @@ namespace WSplitTimer
             private int segTimeLength;
             private int segTimeWidth;
 
-
-
             public Painter(WSplit wsplit)
             {
                 this.wsplit = wsplit;
             }
 
-            // Set the image's opacity.
-            private Bitmap SetOpacity(Bitmap input_bm, float opacity)
-            {
-                // Make the new bitmap.
-                Bitmap output_bm = new Bitmap(
-                    input_bm.Width, input_bm.Height);
-
-                // Make an associated Graphics object.
-                using (Graphics gr = Graphics.FromImage(output_bm))
-                {
-                    // Make a ColorMatrix with the opacity.
-                    ColorMatrix color_matrix = new ColorMatrix();
-                    color_matrix.Matrix33 = opacity;
-
-                    // Make the ImageAttributes object.
-                    ImageAttributes attributes = new ImageAttributes();
-                    attributes.SetColorMatrix(color_matrix,
-                        ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-
-                    // Draw the input bitmap onto the Graphics object.
-                    Rectangle rect = new Rectangle(0, 0,
-                        output_bm.Width, output_bm.Height);
-
-                    gr.DrawImage(input_bm, rect,
-                        0, 0, input_bm.Width, input_bm.Height,
-                        GraphicsUnit.Pixel, attributes);
-                }
-                return output_bm;
-            }
-
             public void PrepareBackground()
             {
-                this.bgImage = null;
-                if (this.animatedBgTimer != null)
+                bgImage = null;
+                if (animatedBgTimer != null)
                 {
-                    this.animatedBgTimer.Dispose();
-                    this.animatedBgTimer = null;
-                    this.currentAnimatedBackgroundFrame = 0;
+                    animatedBgTimer.Dispose();
+                    animatedBgTimer = null;
+                    currentAnimatedBackgroundFrame = 0;
                 }
 
                 if (Settings.Profile.BackgroundImage)
@@ -3013,24 +2971,24 @@ namespace WSplitTimer
                     {
                         using (Bitmap bmp = new Bitmap(Settings.Profile.BackgroundImageFilename))
                         {
-                            this.bgImage = SetOpacity(bmp.Clone(Settings.Profile.BackgroundImageSelection, bmp.PixelFormat), Settings.Profile.BackgroundOpacity / 100f);
+                            bgImage = bmp.Clone(Settings.Profile.BackgroundImageSelection, bmp.PixelFormat);
                         }
 
-                        if (this.bgImage.FrameDimensionsList.Any(fd => fd.Equals(FrameDimension.Time.Guid))
-                            && this.bgImage.GetFrameCount(FrameDimension.Time) > 1)
+                        if (bgImage.FrameDimensionsList.Any(fd => fd.Equals(FrameDimension.Time.Guid))
+                            && bgImage.GetFrameCount(FrameDimension.Time) > 1)
                         {
-                            PropertyItem gifDelay = this.bgImage.GetPropertyItem(0x5100);
+                            PropertyItem gifDelay = bgImage.GetPropertyItem(0x5100);
 
-                            this.animatedBgTimer = new Timer();
-                            this.animatedBgTimer.Interval = BitConverter.ToInt16(gifDelay.Value, 0) * 10;
-                            this.animatedBgTimer.Tick += (o, e) =>
+                            animatedBgTimer = new Timer();
+                            animatedBgTimer.Interval = BitConverter.ToInt16(gifDelay.Value, 0) * 10;
+                            animatedBgTimer.Tick += (o, e) =>
                                 {
-                                    ++this.currentAnimatedBackgroundFrame;
-                                    if (this.currentAnimatedBackgroundFrame >= this.bgImage.GetFrameCount(FrameDimension.Time))
-                                        this.currentAnimatedBackgroundFrame = 0;
+                                    ++currentAnimatedBackgroundFrame;
+                                    if (currentAnimatedBackgroundFrame >= bgImage.GetFrameCount(FrameDimension.Time))
+                                        currentAnimatedBackgroundFrame = 0;
 
-                                    this.bgImage.SelectActiveFrame(FrameDimension.Time, currentAnimatedBackgroundFrame);
-                                    this.RequestBackgroundRedraw();
+                                    bgImage.SelectActiveFrame(FrameDimension.Time, currentAnimatedBackgroundFrame);
+                                    RequestBackgroundRedraw();
                                 };
                         }
                     }
@@ -3041,12 +2999,12 @@ namespace WSplitTimer
                     }
                 }
                 // Prepare background
-                this.RequestBackgroundRedraw();
+                RequestBackgroundRedraw();
             }
 
             public void RequestBackgroundRedraw()
             {
-                this.bgRedrawRequested = true;
+                bgRedrawRequested = true;
             }
 
             private void DrawBackground(Graphics graphics, float angle, int num5, int num8, int num13, int x)
@@ -3055,16 +3013,16 @@ namespace WSplitTimer
                 // it's the angle m8...
 
                 // If there is a need to redraw the background
-                if (((this.background == null) || (this.background.Size != wsplit.Size)) || this.bgRedrawRequested)
+                if (((background == null) || (background.Size != wsplit.Size)) || bgRedrawRequested)
                 {
-                    this.bgRedrawRequested = false;
+                    bgRedrawRequested = false;
                     GC.Collect();   // Hardcoded Garbage Collection? Mmh...
 
                     // Creating the bitmap
-                    if ((this.background == null) || (this.background.Size != wsplit.Size))
-                        this.background = new Bitmap(wsplit.Width, wsplit.Height);
+                    if ((background == null) || (background.Size != wsplit.Size))
+                        background = new Bitmap(wsplit.Width, wsplit.Height);
 
-                    Graphics bgGraphics = Graphics.FromImage(this.background);
+                    Graphics bgGraphics = Graphics.FromImage(background);
                     bgGraphics.Clear(Color.Black);
                     bgGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
@@ -3225,7 +3183,6 @@ namespace WSplitTimer
                                 {
                                     bgGraphics.FillRectangle(new SolidBrush(ColorSettings.Profile.TitleBack), titleX, titleY, wsplit.Width, 32);
                                     bgGraphics.FillRectangle(new SolidBrush(ColorSettings.Profile.TitleBack2), titleX, titleY, wsplit.Width, 16);
-
                                 }
                                 else
                                 {
@@ -3322,7 +3279,7 @@ namespace WSplitTimer
                         // The run is going
                         else if ((wsplit.currentDispMode == DisplayMode.Compact) && (wsplit.split.CompTime(wsplit.split.LiveIndex) != 0.0))
                             statusText = wsplit.split.ComparingType.ToString() + ": " + wsplit.timeFormatter(wsplit.split.CompTime(wsplit.split.LiveIndex), TimeFormat.Long);
-                        else if (this.segLosingTime)
+                        else if (segLosingTime)
                             statusText = "Live Segment";
                         else if (((wsplit.split.LiveIndex > 0) && (wsplit.split.segments[wsplit.split.LiveIndex - 1].LiveTime > 0.0)) && (wsplit.split.CompTime(wsplit.split.LiveIndex - 1) != 0.0))
                             statusText = "Previous Segment";
@@ -3394,7 +3351,6 @@ namespace WSplitTimer
                                 bgGraphics.DrawString("Goal: " + wsplit.split.RunGoal, wsplit.displayFont, new SolidBrush(ColorSettings.Profile.TitleFore), goalRectangle, format5);
                             }
                         }
-
                         else if (wsplit.split.Done)
                         {
                             if (wsplit.currentDispMode == DisplayMode.Wide)
@@ -3414,14 +3370,14 @@ namespace WSplitTimer
 
                         if (wsplit.currentDispMode == DisplayMode.Compact)
                         {
-                            headerTextRectangle.Width -= this.segDeltaWidth;
-                            statusTextRectangle.Width -= this.runDeltaWidth;
-                            statusTextRectangle.X += this.runDeltaWidth;
+                            headerTextRectangle.Width -= segDeltaWidth;
+                            statusTextRectangle.Width -= runDeltaWidth;
+                            statusTextRectangle.X += runDeltaWidth;
                         }
                         else
                         {
-                            headerTextRectangle.Width -= this.runDeltaWidth;
-                            statusTextRectangle.Width -= this.segDeltaWidth;
+                            headerTextRectangle.Width -= runDeltaWidth;
+                            statusTextRectangle.Width -= segDeltaWidth;
                         }
 
                         bgGraphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
@@ -3535,12 +3491,6 @@ namespace WSplitTimer
                     //
                     if ((wsplit.currentDispMode == DisplayMode.Wide) || (wsplit.currentDispMode == DisplayMode.Detailed))
                     {
-
-                        if (Settings.Profile.BackgroundImage)
-                        {
-                            bgGraphics.DrawImage(bgImage, 0, 0, wsplit.Width, wsplit.Height);
-                        }
-
                         Rectangle rectangle8;   // Yet another unnamed rectangle
                         int num16 = wsplit.clockRect.Right + 2;
                         int y = 0;
@@ -3551,7 +3501,6 @@ namespace WSplitTimer
                         }
                         else if ((wsplit.split.RunTitle != "") && Settings.Profile.ShowTitle)
                             y += 18;
-
                         else if ((wsplit.split.RunGoal != "") && Settings.Profile.ShowGoal)
                         {
                             y += 18;
@@ -3562,7 +3511,6 @@ namespace WSplitTimer
                             rectangle8 = new Rectangle(num16, 0, (wsplit.Width - wsplit.clockRect.Width) - 122, wsplit.Height);
                             bgGraphics.FillRectangle(new SolidBrush(ColorSettings.Profile.StatusBack2), wsplit.clockRect.Right, 0, 2, wsplit.Height);
                         }
-
                         else
                             rectangle8 = new Rectangle(0, y, wsplit.Width, wsplit.clockRect.Bottom - 18);
 
@@ -3648,7 +3596,7 @@ namespace WSplitTimer
                             // idk //
                             string name = wsplit.split.segments[i].Name;
 
-                            if ((i == wsplit.split.LiveIndex) && this.runLosingTime)
+                            if ((i == wsplit.split.LiveIndex) && runLosingTime)
                                 segTimeWidth = this.segTimeWidth;
                             else
                                 segTimeWidth = wsplit.split.segments[i].TimeWidth;
@@ -3665,7 +3613,6 @@ namespace WSplitTimer
                                 rectangle12 = new Rectangle(rectangle11.Left, wsplit.Height / 2, rectangle11.Width, wsplit.Height / 2);
                                 rectangle13 = new Rectangle(rectangle11.Left + Settings.Profile.Width + 8, wsplit.Height / 2, rectangle11.Width, wsplit.Height / 2);
                             }
-
                             else
                             /* create rectangles here */
                             {
@@ -3817,7 +3764,7 @@ namespace WSplitTimer
                     }
 
                     // Code for drawing clock back has been moved to another function. Current method's signature is temporary
-                    this.DrawClockBack(angle, num8, bgGraphics);
+                    DrawClockBack(angle, num8, bgGraphics);
 
                     if (((x > 0) && (wsplit.currentDispMode == DisplayMode.Compact)) && (wsplit.split.LiveRun && !wsplit.split.Done))
                     {
@@ -3842,12 +3789,12 @@ namespace WSplitTimer
                         }
                         Rectangle rectangle14 = new Rectangle(3, 3, x, x);
                         bgGraphics.DrawImage(icon, rectangle14, 0, 0, icon.Width, icon.Height, GraphicsUnit.Pixel);
-                        bgGraphics.DrawRectangle(new Pen(new SolidBrush(wsplit.DarkenColor(this.clockColor, 0.7))), 3, 3, icon.Width, icon.Height);
+                        bgGraphics.DrawRectangle(new Pen(new SolidBrush(wsplit.DarkenColor(clockColor, 0.7))), 3, 3, icon.Width, icon.Height);
                     }
                 }
 
                 graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.DrawImage(this.background, 0, 0);
+                graphics.DrawImage(background, 0, 0);
                 graphics.CompositingMode = CompositingMode.SourceOver;
             }
 
@@ -3858,7 +3805,6 @@ namespace WSplitTimer
                 bool flag = false;
                 double totalMilliseconds = wsplit.timer.Elapsed.TotalMilliseconds;
 
-
                 if (((Settings.Profile.FallbackPreference == 1) || (Settings.Profile.FallbackPreference == 2)) && (totalMilliseconds > 0.0))
                 {
                     double num2 = Math.Abs(wsplit.timer.driftMilliseconds);
@@ -3867,11 +3813,9 @@ namespace WSplitTimer
                     {
                         if (Settings.Profile.FallbackPreference == 2)
                             wsplit.timer.useFallback = true;
-
                         else
                             flag = true;
                     }
-
                     else if (Settings.Profile.FallbackPreference == 2)
                     {
                         wsplit.timer.useFallback = false;
@@ -3916,17 +3860,17 @@ namespace WSplitTimer
                 if (span2.TotalHours >= 100.0)
                 {
                     clockTimeAbsSize = MeasureTimeStringMax("888:88:88", (Settings.Profile.DigitalClock) ? wsplit.digitLarge : wsplit.clockLarge, graphics);
-                    this.timeStringAbsPart = string.Format("{0:000}:{1:00}:{2:00}", Math.Floor(span2.TotalHours) % 1000.0, span2.Minutes, span2.Seconds);
+                    timeStringAbsPart = string.Format("{0:000}:{1:00}:{2:00}", Math.Floor(span2.TotalHours) % 1000.0, span2.Minutes, span2.Seconds);
                 }
                 else
                 {
                     clockTimeAbsSize = MeasureTimeStringMax("88:88:88", (Settings.Profile.DigitalClock) ? wsplit.digitLarge : wsplit.clockLarge, graphics);
                     if (span2.TotalHours >= 1.0)
-                        this.timeStringAbsPart = string.Format("{0:0}:{1:00}:{2:00}", Math.Floor(span2.TotalHours), span2.Minutes, span2.Seconds);
+                        timeStringAbsPart = string.Format("{0:0}:{1:00}:{2:00}", Math.Floor(span2.TotalHours), span2.Minutes, span2.Seconds);
                     else if (span2.TotalMinutes >= 1.0)
-                        this.timeStringAbsPart = string.Format("{0}:{1:00}", span2.Minutes, span2.Seconds);
+                        timeStringAbsPart = string.Format("{0}:{1:00}", span2.Minutes, span2.Seconds);
                     else
-                        this.timeStringAbsPart = string.Format("{0}", span2.Seconds);
+                        timeStringAbsPart = string.Format("{0}", span2.Seconds);
                 }
 
                 if (Settings.Profile.DigitalClock)
@@ -3935,25 +3879,25 @@ namespace WSplitTimer
                     /*if (wsplit.stopwatch.Interval > 42)
                         this.timeStringAbsPart = this.timeStringAbsPart.PadLeft(9, ' ');*/
 
-                    this.timeStringAbsPart = this.timeStringAbsPart.PadLeft(8, ' ');
-                    if (((wsplit.split.StartDelay != 0) && (wsplit.timer.ElapsedTicks == 0L)) && (this.timeStringAbsPart.Substring(0, 1) == " "))
+                    timeStringAbsPart = timeStringAbsPart.PadLeft(8, ' ');
+                    if (((wsplit.split.StartDelay != 0) && (wsplit.timer.ElapsedTicks == 0L)) && (timeStringAbsPart.Substring(0, 1) == " "))
                     {
-                        this.timeStringAbsPart = "-" + this.timeStringAbsPart.Substring(1, this.timeStringAbsPart.Length - 1);
+                        timeStringAbsPart = "-" + timeStringAbsPart.Substring(1, timeStringAbsPart.Length - 1);
                     }
                 }
                 else if (((wsplit.split.StartDelay != 0) && (wsplit.timer.ElapsedTicks == 0L)) && ((span2.TotalHours < 10.0) || ((span2.TotalHours < 100.0) && (wsplit.stopwatch.Interval > 42))))
-                    this.timeStringAbsPart = "-" + this.timeStringAbsPart;
+                    timeStringAbsPart = "-" + timeStringAbsPart;
 
                 // If the number of hours is greater or equal to 100 or the refresh interval is greater than 42, show only 1 digit after the decimal
                 if ((span2.TotalHours >= 100.0) || (wsplit.stopwatch.Interval > 42))
                 {
-                    this.clockTimeDecSize = MeasureTimeStringMax("8", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
-                    this.timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(((double)span2.Milliseconds) / 100.0)));
+                    clockTimeDecSize = MeasureTimeStringMax("8", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
+                    timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(((double)span2.Milliseconds) / 100.0)));
                 }
                 else
                 {
-                    this.clockTimeDecSize = MeasureTimeStringMax("88", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
-                    this.timeStringDecPart = string.Format("{0:00}", Math.Floor((double)(((double)span2.Milliseconds) / 10.0)));
+                    clockTimeDecSize = MeasureTimeStringMax("88", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
+                    timeStringDecPart = string.Format("{0:00}", Math.Floor((double)(((double)span2.Milliseconds) / 10.0)));
                 }
 
                 clockTimeTotalSize = new SizeF(clockTimeAbsSize.Width + clockTimeDecSize.Width,
@@ -3983,18 +3927,18 @@ namespace WSplitTimer
                             if ((wsplit.split.LastSegment.LiveTime < wsplit.split.CompTime(wsplit.split.LastIndex)) || (wsplit.split.CompTime(wsplit.split.LastIndex) == 0.0))
                             {
                                 clockColor = ColorSettings.Profile.RecordFore;
-                                this.clockGrColor = ColorSettings.Profile.RecordBack;
-                                this.clockGrColor2 = ColorSettings.Profile.RecordBack2;
-                                this.clockPlainColor = ColorSettings.Profile.RecordBackPlain;
+                                clockGrColor = ColorSettings.Profile.RecordBack;
+                                clockGrColor2 = ColorSettings.Profile.RecordBack2;
+                                clockPlainColor = ColorSettings.Profile.RecordBackPlain;
 
                                 dViewClockColor = ColorSettings.Profile.UsedDViewRecord;
                             }
                             else
                             {
                                 clockColor = ColorSettings.Profile.FinishedFore;
-                                this.clockGrColor = ColorSettings.Profile.FinishedBack;
-                                this.clockGrColor2 = ColorSettings.Profile.FinishedBack2;
-                                this.clockPlainColor = ColorSettings.Profile.FinishedBackPlain;
+                                clockGrColor = ColorSettings.Profile.FinishedBack;
+                                clockGrColor2 = ColorSettings.Profile.FinishedBack2;
+                                clockPlainColor = ColorSettings.Profile.FinishedBackPlain;
 
                                 dViewClockColor = ColorSettings.Profile.UsedDViewFinished;
                             }
@@ -4007,9 +3951,9 @@ namespace WSplitTimer
                         else if (wsplit.split.CompTime() == 0.0)
                         {
                             clockColor = ColorSettings.Profile.AheadFore;
-                            this.clockGrColor = ColorSettings.Profile.AheadBack;
-                            this.clockGrColor2 = ColorSettings.Profile.AheadBack2;
-                            this.clockPlainColor = ColorSettings.Profile.AheadBackPlain;
+                            clockGrColor = ColorSettings.Profile.AheadBack;
+                            clockGrColor2 = ColorSettings.Profile.AheadBack2;
+                            clockPlainColor = ColorSettings.Profile.AheadBackPlain;
 
                             dViewClockColor = ColorSettings.Profile.UsedDViewAhead;
                         }
@@ -4018,18 +3962,18 @@ namespace WSplitTimer
                             if (num3 < 0.0)
                             {
                                 clockColor = ColorSettings.Profile.AheadFore;
-                                this.clockGrColor = ColorSettings.Profile.AheadBack;
-                                this.clockGrColor2 = ColorSettings.Profile.AheadBack2;
-                                this.clockPlainColor = ColorSettings.Profile.AheadBackPlain;
+                                clockGrColor = ColorSettings.Profile.AheadBack;
+                                clockGrColor2 = ColorSettings.Profile.AheadBack2;
+                                clockPlainColor = ColorSettings.Profile.AheadBackPlain;
 
                                 dViewClockColor = ColorSettings.Profile.UsedDViewAhead;
                             }
                             else
                             {
                                 clockColor = ColorSettings.Profile.AheadLosingFore;
-                                this.clockGrColor = ColorSettings.Profile.AheadLosingBack;
-                                this.clockGrColor2 = ColorSettings.Profile.AheadLosingBack2;
-                                this.clockPlainColor = ColorSettings.Profile.AheadLosingBackPlain;
+                                clockGrColor = ColorSettings.Profile.AheadLosingBack;
+                                clockGrColor2 = ColorSettings.Profile.AheadLosingBack2;
+                                clockPlainColor = ColorSettings.Profile.AheadLosingBackPlain;
 
                                 dViewClockColor = ColorSettings.Profile.UsedDViewAheadLosing;
                             }
@@ -4037,18 +3981,18 @@ namespace WSplitTimer
                         else if (num3 < 0.0)
                         {
                             clockColor = ColorSettings.Profile.BehindFore;
-                            this.clockGrColor = ColorSettings.Profile.BehindBack;
-                            this.clockGrColor2 = ColorSettings.Profile.BehindBack2;
-                            this.clockPlainColor = ColorSettings.Profile.BehindBackPlain;
+                            clockGrColor = ColorSettings.Profile.BehindBack;
+                            clockGrColor2 = ColorSettings.Profile.BehindBack2;
+                            clockPlainColor = ColorSettings.Profile.BehindBackPlain;
 
                             dViewClockColor = ColorSettings.Profile.UsedDViewBehind;
                         }
                         else
                         {
                             clockColor = ColorSettings.Profile.BehindLosingFore;
-                            this.clockGrColor = ColorSettings.Profile.BehindLosingBack;
-                            this.clockGrColor2 = ColorSettings.Profile.BehindLosingBack2;
-                            this.clockPlainColor = ColorSettings.Profile.BehindLosingBackPlain;
+                            clockGrColor = ColorSettings.Profile.BehindLosingBack;
+                            clockGrColor2 = ColorSettings.Profile.BehindLosingBack2;
+                            clockPlainColor = ColorSettings.Profile.BehindLosingBackPlain;
 
                             dViewClockColor = ColorSettings.Profile.UsedDViewBehindLosing;
                         }
@@ -4056,9 +4000,9 @@ namespace WSplitTimer
                     else
                     {
                         clockColor = ColorSettings.Profile.WatchFore;
-                        this.clockGrColor = ColorSettings.Profile.WatchBack;
-                        this.clockGrColor2 = ColorSettings.Profile.WatchBack2;
-                        this.clockPlainColor = ColorSettings.Profile.WatchBackPlain;
+                        clockGrColor = ColorSettings.Profile.WatchBack;
+                        clockGrColor2 = ColorSettings.Profile.WatchBack2;
+                        clockPlainColor = ColorSettings.Profile.WatchBackPlain;
                     }
                 }
                 else if (wsplit.timer.ElapsedTicks > 0L)
@@ -4069,34 +4013,34 @@ namespace WSplitTimer
                 else if (wsplit.split.StartDelay != 0)
                 {
                     clockColor = ColorSettings.Profile.DelayFore;
-                    this.clockGrColor = ColorSettings.Profile.DelayBack;
-                    this.clockGrColor2 = ColorSettings.Profile.DelayBack2;
-                    this.clockPlainColor = ColorSettings.Profile.DelayBackPlain;
+                    clockGrColor = ColorSettings.Profile.DelayBack;
+                    clockGrColor2 = ColorSettings.Profile.DelayBack2;
+                    clockPlainColor = ColorSettings.Profile.DelayBackPlain;
 
                     dViewClockColor = ColorSettings.Profile.UsedDViewDelay;
                 }
                 else if (wsplit.split.LiveRun)
                 {
                     clockColor = ColorSettings.Profile.AheadFore;
-                    this.clockGrColor = ColorSettings.Profile.AheadBack;
-                    this.clockGrColor2 = ColorSettings.Profile.AheadBack2;
-                    this.clockPlainColor = ColorSettings.Profile.AheadBackPlain;
+                    clockGrColor = ColorSettings.Profile.AheadBack;
+                    clockGrColor2 = ColorSettings.Profile.AheadBack2;
+                    clockPlainColor = ColorSettings.Profile.AheadBackPlain;
 
                     dViewClockColor = ColorSettings.Profile.UsedDViewAhead;
                 }
                 else
                 {
                     clockColor = ColorSettings.Profile.WatchFore;
-                    this.clockGrColor = ColorSettings.Profile.WatchBack;
-                    this.clockGrColor2 = ColorSettings.Profile.WatchBack2;
-                    this.clockPlainColor = ColorSettings.Profile.WatchBackPlain;
+                    clockGrColor = ColorSettings.Profile.WatchBack;
+                    clockGrColor2 = ColorSettings.Profile.WatchBack2;
+                    clockPlainColor = ColorSettings.Profile.WatchBackPlain;
 
                     dViewClockColor = ColorSettings.Profile.UsedDViewAhead;
                 }
 
                 if (clockColor != this.clockColor)
                 {
-                    this.RequestBackgroundRedraw();
+                    RequestBackgroundRedraw();
                     this.clockColor = clockColor;
                 }
 
@@ -4155,7 +4099,7 @@ namespace WSplitTimer
                         format2.Alignment = StringAlignment.Near;
 
                     if (num3 <= 0.0)
-                        this.segLosingTime = false;
+                        segLosingTime = false;
 
                     if (wsplit.timer.ElapsedTicks != 0L)
                     {
@@ -4174,10 +4118,10 @@ namespace WSplitTimer
                             text = wsplit.timeFormatter(num10, TimeFormat.DeltaShort);
 
                             // If we just started losing time, we indicate we are and we ask for a redraw of the timer background since color has changed
-                            if (!this.segLosingTime)
+                            if (!segLosingTime)
                             {
-                                this.segLosingTime = true;
-                                this.RequestBackgroundRedraw();
+                                segLosingTime = true;
+                                RequestBackgroundRedraw();
                             }
                         }
 
@@ -4250,18 +4194,18 @@ namespace WSplitTimer
                         }
                     }
 
-                    if (text.Length != this.segDelLength)
+                    if (text.Length != segDelLength)
                     {
-                        this.segDelLength = text.Length;
-                        this.segDeltaWidth = MeasureDisplayStringWidth(text, wsplit.timeFont);
-                        this.RequestBackgroundRedraw();
+                        segDelLength = text.Length;
+                        segDeltaWidth = MeasureDisplayStringWidth(text, wsplit.timeFont);
+                        RequestBackgroundRedraw();
                     }
 
-                    if (str4.Length != this.runDelLength)
+                    if (str4.Length != runDelLength)
                     {
-                        this.runDelLength = str4.Length;
-                        this.runDeltaWidth = MeasureDisplayStringWidth(str4, wsplit.timeFont);
-                        this.RequestBackgroundRedraw();
+                        runDelLength = str4.Length;
+                        runDeltaWidth = MeasureDisplayStringWidth(str4, wsplit.timeFont);
+                        RequestBackgroundRedraw();
                     }
                 }
 
@@ -4284,21 +4228,21 @@ namespace WSplitTimer
                 // If in wide or detailed desplay mode and if not done...
                 if (((wsplit.currentDispMode == DisplayMode.Wide) || (wsplit.currentDispMode == DisplayMode.Detailed)) && !wsplit.split.Done)
                 {
-                    this.runLosingTime = false; // Not losing time... ?
+                    runLosingTime = false; // Not losing time... ?
 
                     // If there is a time to compare to and one current segment delta or run delta is greater than 0.0
                     if ((wsplit.split.CompTime() > 0.0) && ((num3 > 0.0) || (secs > 0.0)))
                     {
-                        this.runLosingTime = true;  // Losing time...
+                        runLosingTime = true;  // Losing time...
                         // Formats run delta in timeString:
                         //timeString = wsplit.timeFormatter(secs, TimeFormat.Delta);
                     }
                     // If losing time and in detailed display mode, and if Segment height (so Icon size) is smaller or equal to 24 pixels and length has changed...
-                    if ((this.runLosingTime && (wsplit.currentDispMode == DisplayMode.Detailed)) && ((wsplit.segHeight <= 0x18) && (timeString.Length != this.segTimeLength)))
+                    if ((runLosingTime && (wsplit.currentDispMode == DisplayMode.Detailed)) && ((wsplit.segHeight <= 0x18) && (timeString.Length != segTimeLength)))
                     {
-                        this.segTimeLength = timeString.Length;
-                        this.segTimeWidth = MeasureDisplayStringWidth(timeString, wsplit.timeFont);
-                        this.RequestBackgroundRedraw();
+                        segTimeLength = timeString.Length;
+                        segTimeWidth = MeasureDisplayStringWidth(timeString, wsplit.timeFont);
+                        RequestBackgroundRedraw();
                     }
 
                     // If in the Wide display mode...
@@ -4339,10 +4283,10 @@ namespace WSplitTimer
                 }
 
                 // Temporary signature of the method
-                this.DrawBackground(graphics, angle, num5, num8, num13, x);
+                DrawBackground(graphics, angle, num5, num8, num13, x);
 
                 // Code for drawing clock fore has been moved to another function. Current method's signature is temporary
-                this.DrawClockFore(graphics, timeStringAbsPart, ref timeStringDecPart, flag, num8, ref brush);
+                DrawClockFore(graphics, timeStringAbsPart, ref timeStringDecPart, flag, num8, ref brush);
 
                 if (wsplit.currentDispMode != DisplayMode.Timer)
                 {
@@ -4357,7 +4301,7 @@ namespace WSplitTimer
                     /* apparently this always runs m8 */
                     if (Settings.Profile.ShowPrevSeg)
                     {
-                        if (!this.segLosingTime && wsplit.split.LiveIndex > 0 &&
+                        if (!segLosingTime && wsplit.split.LiveIndex > 0 &&
                             wsplit.split.LiveSegment(wsplit.split.LiveIndex - 1) != 0.0 && (wsplit.split.segments[wsplit.split.LiveIndex - 1].BestSegment == 0.0 ||
                             wsplit.split.LiveSegment(wsplit.split.LiveIndex - 1) < wsplit.split.segments[wsplit.split.LiveIndex - 1].BestSegment))
                         {
@@ -4409,12 +4353,12 @@ namespace WSplitTimer
                 if (!Settings.Profile.BackgroundBlack)
                 {
                     if (Settings.Profile.BackgroundPlain)
-                        bgGraphics.FillRectangle(new SolidBrush(this.clockPlainColor), wsplit.clockRect);
+                        bgGraphics.FillRectangle(new SolidBrush(clockPlainColor), wsplit.clockRect);
                     else
                     {
-                        bgGraphics.FillRectangle(new LinearGradientBrush(wsplit.clockRect, this.clockGrColor, this.clockGrColor2, angle), wsplit.clockRect);
+                        bgGraphics.FillRectangle(new LinearGradientBrush(wsplit.clockRect, clockGrColor, clockGrColor2, angle), wsplit.clockRect);
                         if ((angle == 0f) && Settings.Profile.ClockAccent)
-                            bgGraphics.FillRectangle(new SolidBrush(Color.FromArgb(0x56, this.clockGrColor2)), wsplit.clockRect.X, wsplit.clockRect.Y, wsplit.clockRect.Width, wsplit.clockRect.Height / 2);
+                            bgGraphics.FillRectangle(new SolidBrush(Color.FromArgb(0x56, clockGrColor2)), wsplit.clockRect.X, wsplit.clockRect.Y, wsplit.clockRect.Width, wsplit.clockRect.Height / 2);
 
                         if (Settings.Profile.DigitalClock)
                         {
@@ -4426,22 +4370,20 @@ namespace WSplitTimer
                             //bgGraphics.TranslateTransform(num8 + (((wsplit.clockRect.Width - (clockScale * 124f)) - num8) / 2f), wsplit.clockRect.Top + ((wsplit.clockRect.Height - (clockScale * 26f)) / 2f));
                             //bgGraphics.ScaleTransform(clockScale, clockScale);
 
-
-                            bgGraphics.TranslateTransform(num8 + ((wsplit.clockRect.Width - (this.clockScale * this.clockTimeTotalSize.Width) - num8) / 2f),
-                                wsplit.clockRect.Top + ((wsplit.clockRect.Height - (this.clockScale * this.clockTimeTotalSize.Height)) / 2f));
+                            bgGraphics.TranslateTransform(num8 + ((wsplit.clockRect.Width - (clockScale * clockTimeTotalSize.Width) - num8) / 2f),
+                                wsplit.clockRect.Top + ((wsplit.clockRect.Height - (clockScale * clockTimeTotalSize.Height)) / 2f));
                             bgGraphics.ScaleTransform(clockScale, clockScale);
 
-                            Brush brush4 = new SolidBrush(Color.FromArgb(86, this.clockGrColor2));
+                            Brush brush4 = new SolidBrush(Color.FromArgb(86, clockGrColor2));
                             bgGraphics.DrawString("88:88:88".PadLeft(timeStringAbsPart.Length, '8'), wsplit.digitLarge, brush4, 0f, 0.15f);
 
                             if (Settings.Profile.ShowDecimalSeparator)
                             {
                                 bgGraphics.DrawString(wsplit.decimalChar, wsplit.digitMed, brush4, (112 - clockTimeDecSize.Width), 4.5f);
-                                bgGraphics.DrawString("".PadRight(this.timeStringDecPart.Length, '8'), wsplit.digitMed, brush4, (119 - clockTimeDecSize.Width), 4.5f);
+                                bgGraphics.DrawString("".PadRight(timeStringDecPart.Length, '8'), wsplit.digitMed, brush4, (119 - clockTimeDecSize.Width), 4.5f);
                             }
-
                             else
-                                bgGraphics.DrawString("".PadRight(this.timeStringDecPart.Length, '8'), wsplit.digitMed, brush4, (117.5f - clockTimeDecSize.Width), 4.5f);
+                                bgGraphics.DrawString("".PadRight(timeStringDecPart.Length, '8'), wsplit.digitMed, brush4, (117.5f - clockTimeDecSize.Width), 4.5f);
 
                             bgGraphics.ResetTransform();
                         }
@@ -4458,8 +4400,8 @@ namespace WSplitTimer
                 graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 
                 //graphics.TranslateTransform(num8 + (((wsplit.clockRect.Width - (clockScale * 124f)) - num8) / 2f), wsplit.clockRect.Top + ((wsplit.clockRect.Height - (clockScale * 26f)) / 2f));
-                graphics.TranslateTransform(num8 + ((wsplit.clockRect.Width - (this.clockScale * this.clockTimeTotalSize.Width) - num8) / 2f),
-                    wsplit.clockRect.Top + ((wsplit.clockRect.Height - (this.clockScale * this.clockTimeTotalSize.Height)) / 2f));
+                graphics.TranslateTransform(num8 + ((wsplit.clockRect.Width - (clockScale * clockTimeTotalSize.Width) - num8) / 2f),
+                    wsplit.clockRect.Top + ((wsplit.clockRect.Height - (clockScale * clockTimeTotalSize.Height)) / 2f));
                 graphics.ScaleTransform(clockScale, clockScale);
 
                 // If using DigitalClock font
@@ -4482,32 +4424,31 @@ namespace WSplitTimer
                         graphics.DrawString(timeStringDecPart, wsplit.digitMed, brush, clockTimeAbsSize.Width, 4.5f);
                         /*graphics.DrawString(wsplit.decimalChar, wsplit.digitMed, brush, (112 - clockTimeDecSize.Width), 4.5f);
                         graphics.DrawString(timeStringDecPart, wsplit.digitMed, brush, (119 - clockTimeDecSize.Width), 4.5f);*/
-
                     }
                     else
                         graphics.DrawString(timeStringDecPart, wsplit.digitMed, brush, (clockTimeAbsSize.Width), 4.5f);
                     //graphics.DrawString(timeStringDecPart, wsplit.digitMed, brush, (117.5f - clockTimeDecSize.Width), 4.5f);
                 }
 
-                // If the font used for the clock is any font but the default digital clock font, the display is done dynamically, according to font measurements. 
+                // If the font used for the clock is any font but the default digital clock font, the display is done dynamically, according to font measurements.
                 else
                 {
                     // Calculates de relative baseline height of both fonts used in the display so that they can be aligned correctly
                     float largeBaseline = wsplit.clockLarge.Size * wsplit.clockLarge.FontFamily.GetCellAscent(wsplit.clockLarge.Style) / wsplit.clockLarge.FontFamily.GetEmHeight(wsplit.clockLarge.Style);
                     float mediumBaseline = wsplit.clockMed.Size * wsplit.clockMed.FontFamily.GetCellAscent(wsplit.clockMed.Style) / wsplit.clockMed.FontFamily.GetEmHeight(wsplit.clockMed.Style);
 
-                    RectangleF clockTimeAbsRectF = new RectangleF(0f, 0f, this.clockTimeAbsSize.Width, this.clockTimeAbsSize.Height);
+                    RectangleF clockTimeAbsRectF = new RectangleF(0f, 0f, clockTimeAbsSize.Width, clockTimeAbsSize.Height);
                     RectangleF clockTimeDecRectF;
 
                     if (Settings.Profile.ShowDecimalSeparator)
                     {
-                        clockTimeDecRectF = new RectangleF(clockTimeAbsRectF.Right - 7, clockTimeAbsRectF.Top + (largeBaseline - mediumBaseline), this.clockTimeDecSize.Width, this.clockTimeDecSize.Height);
+                        clockTimeDecRectF = new RectangleF(clockTimeAbsRectF.Right - 7, clockTimeAbsRectF.Top + (largeBaseline - mediumBaseline), clockTimeDecSize.Width, clockTimeDecSize.Height);
 
                         graphics.DrawString(wsplit.decimalChar, wsplit.clockMed, brush, clockTimeDecRectF);
                         clockTimeDecRectF.X = clockTimeAbsRectF.Right;
                     }
                     else
-                        clockTimeDecRectF = new RectangleF(clockTimeAbsRectF.Right - 2, clockTimeAbsRectF.Top + (largeBaseline - mediumBaseline), this.clockTimeDecSize.Width, this.clockTimeDecSize.Height);
+                        clockTimeDecRectF = new RectangleF(clockTimeAbsRectF.Right - 2, clockTimeAbsRectF.Top + (largeBaseline - mediumBaseline), clockTimeDecSize.Width, clockTimeDecSize.Height);
 
                     StringFormat format = new StringFormat { Alignment = StringAlignment.Far };
                     graphics.DrawString(timeStringAbsPart, wsplit.clockLarge, brush, clockTimeAbsRectF, format);
@@ -4540,4 +4481,3 @@ namespace WSplitTimer
         }
     }
 }
-
