@@ -46,6 +46,16 @@ namespace WSplitTimer
             }
         }
 
+        public void OpenCustomBackgroundMenuItem()
+        {
+            // Shows the backgroundImageDialog and, if OK is clicked, apply the settings
+            if (BackgroundImageDialog.ShowDialog(this, wsplit) == DialogResult.OK)
+            {
+                BackgroundImageDialog.ApplyChanges();
+                BackgroundSettingsChanged = true;
+            }
+        }
+
         public string StartDelay
         {
             get { return textBoxStartDelay.Text; }

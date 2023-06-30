@@ -57,6 +57,7 @@ namespace WSplitTimer
         private ToolStripMenuItem clockAccent;
         private ToolStripMenuItem plainBg;
         private ToolStripMenuItem blackBg;
+        private ToolStripMenuItem customBg;
         private ToolStripMenuItem menuItemAdvancedDisplay;
         private ToolStripMenuItem setColorsButton;
         private ToolStripSeparator toolStripSeparator5;
@@ -275,6 +276,15 @@ namespace WSplitTimer
             blackBg.Checked = Settings.Profile.BackgroundBlack;
             painter.RequestBackgroundRedraw();
             base.Invalidate();
+        }
+
+        private void customBg_Click(object sender, EventArgs e)
+        {
+            if (settingsDialog == null)
+            {
+                settingsDialog = new SettingsDialog();
+            }
+            settingsDialog.OpenCustomBackgroundMenuItem();
         }
 
         private void clear_Click(object sender, EventArgs e)
@@ -725,6 +735,7 @@ namespace WSplitTimer
             clockAccent = new ToolStripMenuItem();
             plainBg = new ToolStripMenuItem();
             blackBg = new ToolStripMenuItem();
+            customBg = new ToolStripMenuItem();
             menuItemAdvancedDisplay = new ToolStripMenuItem();
             setColorsButton = new ToolStripMenuItem();
             toolStripSeparator6 = new ToolStripSeparator();
@@ -819,7 +830,7 @@ namespace WSplitTimer
             menuItemSettings.Text = "Settings...";
             menuItemSettings.Click += new EventHandler(menuItemSettings_Click);
             displaySettingsMenu.DropDownItems.AddRange(new ToolStripItem[] {
-                alwaysOnTop, showRunTitleButton, showAttemptCount, showRunGoalMenuItem, toolStripSeparator3, displayTimerOnlyButton, displayCompactButton, displayWideButton, displayDetailedButton, toolStripSeparator5, clockAppearanceToolStripMenuItem, plainBg, blackBg, menuItemAdvancedDisplay, setColorsButton, toolStripSeparator6,
+                alwaysOnTop, showRunTitleButton, showAttemptCount, showRunGoalMenuItem, toolStripSeparator3, displayTimerOnlyButton, displayCompactButton, displayWideButton, displayDetailedButton, toolStripSeparator5, clockAppearanceToolStripMenuItem, plainBg, blackBg, customBg, menuItemAdvancedDisplay, setColorsButton, toolStripSeparator6,
                 advancedDetailButton
              });
             displaySettingsMenu.Name = "displaySettingsMenu";
@@ -885,6 +896,10 @@ namespace WSplitTimer
             blackBg.Size = new Size(0xcc, 0x16);
             blackBg.Text = "Black background";
             blackBg.Click += new EventHandler(blackBg_Click);
+            customBg.Name = "customBg";
+            customBg.Size = new Size(0xcc, 0x16);
+            customBg.Text = "Background Image";
+            customBg.Click += new EventHandler(customBg_Click);
             menuItemAdvancedDisplay.Name = "menuItemAdvancedDisplay";
             menuItemAdvancedDisplay.Size = new Size(0xcc, 0x16);
             menuItemAdvancedDisplay.Text = "Advanced...";
@@ -2118,14 +2133,15 @@ namespace WSplitTimer
         // Detailed Update (Updates some stuff, not necessarely in the detailed window or detailed view.
         public void updateDetailed()
         {
+            // TODO: Add best possible time for Dune
             ColorSettings colors = ColorSettings.Profile;
             // For every split, checks conditions set the time string, the color and the width of the split time
             for (int i = 0; i <= split.LastIndex; i++)
             {
                 if ((i < split.LiveIndex) && (timer.ElapsedTicks > 0L))
                 {
-                    double num2 = split.SegDelta(split.segments[i].LiveTime, i);
-                    double num3 = split.RunDelta(split.segments[i].LiveTime, i);
+                    double segDelta = split.SegDelta(split.segments[i].LiveTime, i);
+                    double runDelta = split.RunDelta(split.segments[i].LiveTime, i);
 
                     // If there is a Delta to write...
                     if ((split.segments[i].LiveTime > 0.0) && (split.CompTime(i) > 0.0))
@@ -2142,9 +2158,9 @@ namespace WSplitTimer
                                 split.segments[i].TimeColor = colors.SegBestSegment;
                             };
                         }
-                        else if (num3 < 0.0)
+                        else if (runDelta < 0.0)
                         {
-                            if (num2 < 0.0)
+                            if (segDelta < 0.0)
                             {
                                 split.segments[i].TimeColor = colors.SegAheadGain;
                             }
@@ -2153,7 +2169,7 @@ namespace WSplitTimer
                                 split.segments[i].TimeColor = colors.SegAheadLoss;
                             }
                         }
-                        else if (num2 > 0.0)
+                        else if (segDelta > 0.0)
                         {
                             split.segments[i].TimeColor = colors.SegBehindLoss;
                         }
