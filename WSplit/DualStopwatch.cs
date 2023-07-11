@@ -59,7 +59,7 @@ public class DualStopwatch
         systimer.Stop();
         if (fallbackIsRunning)
         {
-            pauseTime = (TimeSpan)(DateTime.UtcNow - startTime);
+            pauseTime = DateTime.UtcNow - startTime;
             pauseTicks = Environment.TickCount - startTicks;
             fallbackIsRunning = false;
         }
@@ -115,7 +115,7 @@ public class DualStopwatch
             {
                 return pauseTime;
             }
-            TimeSpan span = (TimeSpan)(DateTime.UtcNow - startTime);
+            TimeSpan span = DateTime.UtcNow - startTime;
             TimeSpan span2 = TimeSpan.FromMilliseconds(Environment.TickCount - startTicks);
             if (span2 < TimeSpan.Zero)
             {

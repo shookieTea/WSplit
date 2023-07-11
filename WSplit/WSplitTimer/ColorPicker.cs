@@ -99,9 +99,9 @@
         {
             double num7;
             double num8;
-            double num4 = ((double)C.R) / 255.0;
-            double num5 = ((double)C.G) / 255.0;
-            double num6 = ((double)C.B) / 255.0;
+            double num4 = C.R / 255.0;
+            double num5 = C.G / 255.0;
+            double num6 = C.B / 255.0;
             double num = Math.Min(Math.Min(num4, num5), num6);
             double num2 = Math.Max(Math.Max(num4, num5), num6);
             double num9 = num2;

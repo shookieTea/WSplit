@@ -417,7 +417,7 @@ namespace WSplitTimer
             modalWindowOpened = true;
 
             // A few settings are necessary before calling the custom ShowDialog method
-            SettingsDialog.StartDelay = timeFormatter(((double)split.StartDelay) / 1000.0, TimeFormat.Seconds);
+            SettingsDialog.StartDelay = timeFormatter(split.StartDelay / 1000.0, TimeFormat.Seconds);
             SettingsDialog.DetailedWidth = clockRect.Width;
 
             // Costum ShowDialog method...
@@ -675,7 +675,7 @@ namespace WSplitTimer
                 {
                     _IMAGE_FILE_HEADER _image_file_header = (_IMAGE_FILE_HEADER)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(_IMAGE_FILE_HEADER));
                     DateTime time2 = new DateTime(0x7b2, 1, 1);
-                    return TimeZone.CurrentTimeZone.ToLocalTime(time2.AddSeconds((double)_image_file_header.TimeDateStamp));
+                    return TimeZone.CurrentTimeZone.ToLocalTime(time2.AddSeconds(_image_file_header.TimeDateStamp));
                 }
                 finally
                 {
@@ -1987,8 +1987,8 @@ namespace WSplitTimer
             if (format == TimeFormat.Long)
             {
                 if (span.TotalHours >= 1.0)
-                    return (str + string.Format("{0}:{1:00}:{2:00.0}", Math.Floor(span.TotalHours), span.Minutes, span.Seconds + (((double)span.Milliseconds) / 1000.0)));
-                return (str + string.Format("{0}:{1:00.0}", span.Minutes, span.Seconds + (((double)span.Milliseconds) / 1000.0)));
+                    return (str + string.Format("{0}:{1:00}:{2:00.0}", Math.Floor(span.TotalHours), span.Minutes, span.Seconds + (span.Milliseconds / 1000.0)));
+                return (str + string.Format("{0}:{1:00.0}", span.Minutes, span.Seconds + (span.Milliseconds / 1000.0)));
             }
 
             if ((span.TotalMinutes >= 1.0) || (format == TimeFormat.Short))
@@ -2405,7 +2405,7 @@ namespace WSplitTimer
                     {
                         num11 = 2;
                     }
-                    dview.segs.FirstDisplayedScrollingRowIndex = Math.Min((int)(dview.segs.RowCount - 1), (int)(1 + Math.Max(0, (split.LiveIndex - num10) + num11)));
+                    dview.segs.FirstDisplayedScrollingRowIndex = Math.Min(dview.segs.RowCount - 1, 1 + Math.Max(0, (split.LiveIndex - num10) + num11));
                 }
                 dview.finalSeg.FirstDisplayedScrollingRowIndex = 1;
                 for (int k = 1; k < dview.finalSeg.Columns.Count; k++)
@@ -2523,20 +2523,20 @@ namespace WSplitTimer
                     x += ((Control)sender).Location.X;
                     y += ((Control)sender).Location.Y;
                 }*/
-                if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((clockRect.Right + wideSegWidth) - 3))) < 4))
+                if ((currentDispMode == DisplayMode.Wide) && (Math.Abs(x - ((clockRect.Right + wideSegWidth) - 3)) < 4))
                 {
                     wideSegResizing = true;
                     wideSegResizeWidth = wideSegWidthBase;
                     wideSegX = x;
                     Cursor.Current = Cursors.SizeWE;
                 }
-                else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
+                else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs(x - (base.Width - 0x75)) < 4))
                 {
                     wideResizing = true;
                     wideResizingX = x;
                     Cursor.Current = Cursors.SizeWE;
                 }
-                else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (clockRect.Top - 1))) < 4))
+                else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs(y - (clockRect.Top - 1)) < 4))
                 {
                     detailResizing = true;
                     detailResizingY = y;
@@ -2697,11 +2697,11 @@ namespace WSplitTimer
                     }
                 }
             }
-            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - ((clockRect.Right + wideSegWidth) - 3))) < 4))
+            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs(x - ((clockRect.Right + wideSegWidth) - 3)) < 4))
                 Cursor.Current = Cursors.SizeWE;
-            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs((int)(x - (base.Width - 0x75))) < 4))
+            else if ((currentDispMode == DisplayMode.Wide) && (Math.Abs(x - (base.Width - 0x75)) < 4))
                 Cursor.Current = Cursors.SizeWE;
-            else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs((int)(y - (clockRect.Top - 1))) < 4))
+            else if ((currentDispMode == DisplayMode.Detailed) && (Math.Abs(y - (clockRect.Top - 1)) < 4))
                 Cursor.Current = Cursors.SizeNS;
             else if ((x >= (clockRect.Right - 5)) && (x <= clockRect.Right))
             {
@@ -3863,7 +3863,7 @@ namespace WSplitTimer
 
                 if ((wsplit.split.StartDelay != 0) && (wsplit.timer.ElapsedTicks == 0L))
                 {
-                    span2 = TimeSpan.FromMilliseconds((double)wsplit.split.StartDelay);
+                    span2 = TimeSpan.FromMilliseconds(wsplit.split.StartDelay);
                     if (wsplit.startDelay != null)
                     {
                         span2 -= DateTime.UtcNow - wsplit.offsetStartTime;
@@ -3906,15 +3906,16 @@ namespace WSplitTimer
                     timeStringAbsPart = "-" + timeStringAbsPart;
 
                 // If the number of hours is greater or equal to 100 or the refresh interval is greater than 42, show only 1 digit after the decimal
+                // TODO: This is how it removes a decimal place. Should be good to have a setting do this
                 if ((span2.TotalHours >= 100.0) || (wsplit.stopwatch.Interval > 42))
                 {
                     clockTimeDecSize = MeasureTimeStringMax("8", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
-                    timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(((double)span2.Milliseconds) / 100.0)));
+                    timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(span2.Milliseconds / 100.0)));
                 }
                 else
                 {
                     clockTimeDecSize = MeasureTimeStringMax("88", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
-                    timeStringDecPart = string.Format("{0:00}", Math.Floor((double)(((double)span2.Milliseconds) / 10.0)));
+                    timeStringDecPart = string.Format("{0:00}", Math.Floor((double)(span2.Milliseconds / 10.0)));
                 }
 
                 clockTimeTotalSize = new SizeF(clockTimeAbsSize.Width + clockTimeDecSize.Width,
@@ -4065,11 +4066,11 @@ namespace WSplitTimer
                 wsplit.dview.clockColor = new SolidBrush(dViewClockColor);
 
                 if (span2.TotalHours >= 100.0)
-                    wsplit.dview.clockText = string.Format("{0:000}:{1:00}:{2:00.00}", Math.Floor((double)(span2.TotalHours % 1000.0)), span2.Minutes, span2.Seconds + (Math.Floor((double)(((float)span2.Milliseconds) / 10f)) / 100.0));
+                    wsplit.dview.clockText = string.Format("{0:000}:{1:00}:{2:00.00}", Math.Floor((double)(span2.TotalHours % 1000.0)), span2.Minutes, span2.Seconds + (Math.Floor((double)(span2.Milliseconds / 10f)) / 100.0));
                 else if (span2.TotalHours >= 1.0)
-                    wsplit.dview.clockText = string.Format("{0:0}:{1:00}:{2:00.00}", Math.Floor((double)(span2.TotalHours % 1000.0)), span2.Minutes, span2.Seconds + (Math.Floor((double)(((float)span2.Milliseconds) / 10f)) / 100.0));
+                    wsplit.dview.clockText = string.Format("{0:0}:{1:00}:{2:00.00}", Math.Floor((double)(span2.TotalHours % 1000.0)), span2.Minutes, span2.Seconds + (Math.Floor((double)(span2.Milliseconds / 10f)) / 100.0));
                 else
-                    wsplit.dview.clockText = string.Format("{0:00}:{1:00.00}", span2.Minutes, span2.Seconds + (Math.Floor((double)(((float)span2.Milliseconds) / 10f)) / 100.0));
+                    wsplit.dview.clockText = string.Format("{0:00}:{1:00.00}", span2.Minutes, span2.Seconds + (Math.Floor((double)(span2.Milliseconds / 10f)) / 100.0));
 
                 wsplit.dview.Invalidate();
 

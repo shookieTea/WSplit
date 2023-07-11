@@ -170,25 +170,25 @@
                 Pen pen2 = new Pen(new SolidBrush(Color.FromArgb(0x40, 0, 0, 0)), 1f);
                 Pen pen3 = new Pen(new SolidBrush(Color.FromArgb(0x80, 0xff, 0xff, 0xff)), 1f);
                 float num5 = height - (height * plusPct);
-                e.Graphics.FillRectangle(new SolidBrush(ColorSettings.Profile.GraphBehind), (float)right, (float)y, (float)width, num5);
-                e.Graphics.FillRectangle(new SolidBrush(ColorSettings.Profile.GraphAhead), (float)right, y + num5, (float)width, height - num5);
+                e.Graphics.FillRectangle(new SolidBrush(ColorSettings.Profile.GraphBehind), right, y, width, num5);
+                e.Graphics.FillRectangle(new SolidBrush(ColorSettings.Profile.GraphAhead), right, y + num5, width, height - num5);
                 for (int i = 1; i <= (width / 7); i++)
                 {
-                    PointF tf = new PointF((float)(right + (7 * i)), (float)y);
-                    PointF tf2 = new PointF(tf.X, (float)(y + height));
+                    PointF tf = new PointF(right + (7 * i), y);
+                    PointF tf2 = new PointF(tf.X, y + height);
                     e.Graphics.DrawLine(pen2, tf, tf2);
                 }
                 for (int j = 1; j <= (height / 7); j++)
                 {
-                    PointF tf3 = new PointF((float)right, (float)(y + (7 * j)));
-                    PointF tf4 = new PointF((float)(right + width), tf3.Y);
+                    PointF tf3 = new PointF(right, y + (7 * j));
+                    PointF tf4 = new PointF(right + width, tf3.Y);
                     e.Graphics.DrawLine(pen2, tf3, tf4);
                 }
                 e.Graphics.DrawRectangle(pen3, new Rectangle(right, y, width, height));
                 if (deltaPoints.Count >= 1)
                 {
                     List<PointF> list = new List<PointF> {
-                        new PointF((float) right, y + num5)
+                        new PointF( right, y + num5)
                     };
                     foreach (PointF tf5 in deltaPoints)
                     {

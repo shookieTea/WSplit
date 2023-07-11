@@ -646,7 +646,7 @@
         {
             if (oldOffset.Text.Length != 0)
             {
-                foreach (DataGridViewRow row in (IEnumerable)runView.Rows)
+                foreach (DataGridViewRow row in runView.Rows)
                 {
                     if (row.Cells[1].Value != null)
                         row.Cells[1].Value = timeFormat(Math.Max((double)0.0, (double)(timeParse(row.Cells[1].Value.ToString()) - timeParse(oldOffset.Text))));
@@ -659,7 +659,7 @@
         {
             if ((e.KeyCode == Keys.Enter) && (oldOffset.Text.Length != 0))
             {
-                foreach (DataGridViewRow row in (IEnumerable)runView.Rows)
+                foreach (DataGridViewRow row in runView.Rows)
                 {
                     if (row.Cells[1].Value != null)
                         row.Cells[1].Value = timeFormat(Math.Max((double)0.0, (double)(timeParse(row.Cells[1].Value.ToString()) - timeParse(oldOffset.Text))));
@@ -836,7 +836,7 @@
 
         private void FillSplitList(ref List<SplitSegment> splitList)
         {
-            foreach (DataGridViewRow row in (IEnumerable)runView.Rows)
+            foreach (DataGridViewRow row in runView.Rows)
             {
                 if (row.Cells[0].Value != null)
                 {
@@ -873,13 +873,14 @@
 
         private string timeFormat(double secs)
         {
+            // TODO: determine if this should be updated to support displaying time in seconds whole, tenth, or miliseconds
             TimeSpan span = TimeSpan.FromSeconds(Math.Truncate(secs * 100) / 100);
             //TimeSpan span = TimeSpan.FromSeconds(Math.Round(secs, 2));
             if (span.TotalHours >= 1.0)
-                return string.Format("{0}:{1:00}:{2:00.00}", Math.Floor(span.TotalHours), span.Minutes, span.Seconds + (((double)span.Milliseconds) / 1000.0));
+                return string.Format("{0}:{1:00}:{2:00.00}", Math.Floor(span.TotalHours), span.Minutes, span.Seconds + (span.Milliseconds / 1000.0));
 
             if (span.TotalMinutes >= 1.0)
-                return string.Format("{0}:{1:00.00}", Math.Floor(span.TotalMinutes), span.Seconds + (((double)span.Milliseconds) / 1000.0));
+                return string.Format("{0}:{1:00.00}", Math.Floor(span.TotalMinutes), span.Seconds + (span.Milliseconds / 1000.0));
 
             return string.Format("{0:0.00}", span.TotalSeconds);
         }
