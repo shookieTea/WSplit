@@ -54,6 +54,20 @@
             set { this["DigitalClock"] = value; }
         }
 
+        [DebuggerNonUserCode, UserScopedSetting, DefaultSettingValue("True")]
+        public bool ShowMilliseconds
+        {
+            get { return (bool)this["ShowMilliseconds"]; }
+            set { this["ShowMilliseconds"] = value; }
+        }
+
+        [DebuggerNonUserCode, UserScopedSetting, DefaultSettingValue("True")]
+        public bool DecisecondsOnly
+        {
+            get { return (bool)this["DecisecondsOnly"]; }
+            set { this["DecisecondsOnly"] = value; }
+        }
+
         [UserScopedSetting, DebuggerNonUserCode, DefaultSettingValue("False")]
         public bool DisplayBlankSegs
         {

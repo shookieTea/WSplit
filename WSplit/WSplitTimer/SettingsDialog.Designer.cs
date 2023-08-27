@@ -29,25 +29,27 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewItem listViewItem13 = new System.Windows.Forms.ListViewItem("General options", 0);
-            System.Windows.Forms.ListViewItem listViewItem14 = new System.Windows.Forms.ListViewItem("Global hotkeys", 1);
-            System.Windows.Forms.ListViewItem listViewItem15 = new System.Windows.Forms.ListViewItem("Font settings", 2);
-            System.Windows.Forms.ListViewItem listViewItem16 = new System.Windows.Forms.ListViewItem("Display settings", 3);
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("General options", 0);
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Global hotkeys", 1);
+            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Font settings", 2);
+            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("Display settings", 3);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsDialog));
-            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("Start/Split");
-            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Pause/Resume");
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Stop");
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("Reset");
-            System.Windows.Forms.ListViewItem listViewItem17 = new System.Windows.Forms.ListViewItem("Previous (Unsplit)");
-            System.Windows.Forms.ListViewItem listViewItem18 = new System.Windows.Forms.ListViewItem("Next (Skip)");
-            System.Windows.Forms.ListViewItem listViewItem19 = new System.Windows.Forms.ListViewItem("Switch Comparison Type");
-            System.Windows.Forms.ListViewItem listViewItem20 = new System.Windows.Forms.ListViewItem("Toggle Global Hotkeys");
+            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem("Start/Split");
+            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("Pause/Resume");
+            System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Stop");
+            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("Reset");
+            System.Windows.Forms.ListViewItem listViewItem9 = new System.Windows.Forms.ListViewItem("Previous (Unsplit)");
+            System.Windows.Forms.ListViewItem listViewItem10 = new System.Windows.Forms.ListViewItem("Next (Skip)");
+            System.Windows.Forms.ListViewItem listViewItem11 = new System.Windows.Forms.ListViewItem("Switch Comparison Type");
+            System.Windows.Forms.ListViewItem listViewItem12 = new System.Windows.Forms.ListViewItem("Toggle Global Hotkeys");
             this.buttonDefaults = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.listViewPanelSelector = new System.Windows.Forms.ListView();
             this.imageListPageIcons = new System.Windows.Forms.ImageList(this.components);
             this.panelGeneralOptions = new System.Windows.Forms.Panel();
+            this.label1 = new System.Windows.Forms.Label();
+            this.numwv = new System.Windows.Forms.NumericUpDown();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.trackBarDoubleTap = new System.Windows.Forms.TrackBar();
@@ -98,6 +100,8 @@
             this.trackBarOpacity = new System.Windows.Forms.TrackBar();
             this.labelOpacity = new System.Windows.Forms.Label();
             this.panelFontSettings = new System.Windows.Forms.Panel();
+            this.decisecondsOnly = new System.Windows.Forms.CheckBox();
+            this.showMilliseconds = new System.Windows.Forms.CheckBox();
             this.groupBoxDViewFont = new System.Windows.Forms.GroupBox();
             this.comboBoxDViewFont = new System.Windows.Forms.ComboBox();
             this.groupBoxPrimWndFont = new System.Windows.Forms.GroupBox();
@@ -106,9 +110,8 @@
             this.numericUpDownPrimWndMult = new System.Windows.Forms.NumericUpDown();
             this.labelPrimWndMult = new System.Windows.Forms.Label();
             this.labelNote = new System.Windows.Forms.Label();
-            this.numwv = new System.Windows.Forms.NumericUpDown();
-            this.label1 = new System.Windows.Forms.Label();
             this.panelGeneralOptions.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numwv)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDoubleTap)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarRefreshInterval)).BeginInit();
             this.panelHotkeys.SuspendLayout();
@@ -122,7 +125,6 @@
             this.groupBoxDViewFont.SuspendLayout();
             this.groupBoxPrimWndFont.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownPrimWndMult)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numwv)).BeginInit();
             this.SuspendLayout();
             // 
             // buttonDefaults
@@ -159,10 +161,10 @@
             // 
             this.listViewPanelSelector.HideSelection = false;
             this.listViewPanelSelector.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem13,
-            listViewItem14,
-            listViewItem15,
-            listViewItem16});
+            listViewItem1,
+            listViewItem2,
+            listViewItem3,
+            listViewItem4});
             this.listViewPanelSelector.LargeImageList = this.imageListPageIcons;
             this.listViewPanelSelector.Location = new System.Drawing.Point(12, 12);
             this.listViewPanelSelector.MultiSelect = false;
@@ -206,6 +208,32 @@
             this.panelGeneralOptions.Padding = new System.Windows.Forms.Padding(3);
             this.panelGeneralOptions.Size = new System.Drawing.Size(256, 302);
             this.panelGeneralOptions.TabIndex = 3;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(20, 271);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(92, 13);
+            this.label1.TabIndex = 11;
+            this.label1.Text = "Wide view height:";
+            // 
+            // numwv
+            // 
+            this.numwv.Location = new System.Drawing.Point(118, 269);
+            this.numwv.Minimum = new decimal(new int[] {
+            24,
+            0,
+            0,
+            0});
+            this.numwv.Name = "numwv";
+            this.numwv.Size = new System.Drawing.Size(124, 20);
+            this.numwv.TabIndex = 10;
+            this.numwv.Value = new decimal(new int[] {
+            36,
+            0,
+            0,
+            0});
             // 
             // checkBox2
             // 
@@ -406,14 +434,14 @@
             this.listViewHotkeys.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listViewHotkeys.HideSelection = false;
             this.listViewHotkeys.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem1,
-            listViewItem2,
-            listViewItem3,
-            listViewItem4,
-            listViewItem17,
-            listViewItem18,
-            listViewItem19,
-            listViewItem20});
+            listViewItem5,
+            listViewItem6,
+            listViewItem7,
+            listViewItem8,
+            listViewItem9,
+            listViewItem10,
+            listViewItem11,
+            listViewItem12});
             this.listViewHotkeys.Location = new System.Drawing.Point(6, 29);
             this.listViewHotkeys.MultiSelect = false;
             this.listViewHotkeys.Name = "listViewHotkeys";
@@ -775,6 +803,8 @@
             // panelFontSettings
             // 
             this.panelFontSettings.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelFontSettings.Controls.Add(this.decisecondsOnly);
+            this.panelFontSettings.Controls.Add(this.showMilliseconds);
             this.panelFontSettings.Controls.Add(this.groupBoxDViewFont);
             this.panelFontSettings.Controls.Add(this.groupBoxPrimWndFont);
             this.panelFontSettings.Controls.Add(this.labelNote);
@@ -783,6 +813,30 @@
             this.panelFontSettings.Padding = new System.Windows.Forms.Padding(3);
             this.panelFontSettings.Size = new System.Drawing.Size(256, 302);
             this.panelFontSettings.TabIndex = 3;
+            // 
+            // decisecondsOnly
+            // 
+            this.decisecondsOnly.AutoSize = true;
+            this.decisecondsOnly.Location = new System.Drawing.Point(12, 176);
+            this.decisecondsOnly.Name = "decisecondsOnly";
+            this.decisecondsOnly.Size = new System.Drawing.Size(134, 17);
+            this.decisecondsOnly.TabIndex = 7;
+            this.decisecondsOnly.Text = "Only deciseconds (0.0)";
+            this.decisecondsOnly.UseVisualStyleBackColor = true;
+            this.decisecondsOnly.CheckedChanged += new System.EventHandler(this.onlyDeciseconds_CheckedChanged);
+            // 
+            // showMilliseconds
+            // 
+            this.showMilliseconds.AutoSize = true;
+            this.showMilliseconds.Checked = true;
+            this.showMilliseconds.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.showMilliseconds.Location = new System.Drawing.Point(12, 157);
+            this.showMilliseconds.Name = "showMilliseconds";
+            this.showMilliseconds.Size = new System.Drawing.Size(142, 17);
+            this.showMilliseconds.TabIndex = 6;
+            this.showMilliseconds.Text = "Show milliseconds (0.00)";
+            this.showMilliseconds.UseVisualStyleBackColor = true;
+            this.showMilliseconds.CheckedChanged += new System.EventHandler(this.showMilliseconds_CheckedChanged);
             // 
             // groupBoxDViewFont
             // 
@@ -879,37 +933,12 @@
             this.labelNote.TabIndex = 1;
             this.labelNote.Text = resources.GetString("labelNote.Text");
             // 
-            // numwv
-            // 
-            this.numwv.Location = new System.Drawing.Point(118, 269);
-            this.numwv.Minimum = new decimal(new int[] {
-            24,
-            0,
-            0,
-            0});
-            this.numwv.Name = "numwv";
-            this.numwv.Size = new System.Drawing.Size(124, 20);
-            this.numwv.TabIndex = 10;
-            this.numwv.Value = new decimal(new int[] {
-            36,
-            0,
-            0,
-            0});
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(20, 271);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(92, 13);
-            this.label1.TabIndex = 11;
-            this.label1.Text = "Wide view height:";
-            // 
             // SettingsDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(352, 355);
+            this.Controls.Add(this.panelFontSettings);
             this.Controls.Add(this.panelGeneralOptions);
             this.Controls.Add(this.listViewPanelSelector);
             this.Controls.Add(this.buttonCancel);
@@ -917,7 +946,6 @@
             this.Controls.Add(this.buttonDefaults);
             this.Controls.Add(this.panelDisplaySettings);
             this.Controls.Add(this.panelHotkeys);
-            this.Controls.Add(this.panelFontSettings);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -926,6 +954,7 @@
             this.Text = "Settings...";
             this.panelGeneralOptions.ResumeLayout(false);
             this.panelGeneralOptions.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numwv)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDoubleTap)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarRefreshInterval)).EndInit();
             this.panelHotkeys.ResumeLayout(false);
@@ -939,11 +968,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetailedSegments)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarOpacity)).EndInit();
             this.panelFontSettings.ResumeLayout(false);
+            this.panelFontSettings.PerformLayout();
             this.groupBoxDViewFont.ResumeLayout(false);
             this.groupBoxPrimWndFont.ResumeLayout(false);
             this.groupBoxPrimWndFont.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownPrimWndMult)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numwv)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1016,6 +1045,7 @@
         private System.Windows.Forms.CheckBox checkBox2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.NumericUpDown numwv;
-
+        private System.Windows.Forms.CheckBox decisecondsOnly;
+        private System.Windows.Forms.CheckBox showMilliseconds;
     }
 }

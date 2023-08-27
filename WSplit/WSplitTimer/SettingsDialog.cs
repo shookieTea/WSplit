@@ -188,6 +188,11 @@ namespace WSplitTimer
             numericUpDownPrimWndMult.Value = (decimal)Settings.Profile.FontMultiplierSegments;
             checkBoxClockDigitalFont.Checked = Settings.Profile.DigitalClock;
 
+            // If milliseconds is checked, deciseconds box is enabled
+            showMilliseconds.Checked = Settings.Profile.ShowMilliseconds;
+            decisecondsOnly.Checked = Settings.Profile.DecisecondsOnly;
+            decisecondsOnly.Enabled = showMilliseconds.Checked;
+
             // Display settings:
             trackBarOpacity.Value = (int)(Settings.Profile.Opacity * 100);
 
@@ -250,6 +255,8 @@ namespace WSplitTimer
             Settings.Profile.FontFamilySegments = (string)comboBoxPrimWndFont.SelectedItem;
             Settings.Profile.FontMultiplierSegments = (float)numericUpDownPrimWndMult.Value;
             Settings.Profile.DigitalClock = checkBoxClockDigitalFont.Checked;
+            Settings.Profile.ShowMilliseconds = showMilliseconds.Checked;
+            Settings.Profile.DecisecondsOnly = decisecondsOnly.Checked;
 
             Settings.Profile.FontFamilyDView = (string)comboBoxDViewFont.SelectedItem;
 
@@ -422,6 +429,19 @@ namespace WSplitTimer
                 BackgroundImageDialog.ApplyChanges();
                 BackgroundSettingsChanged = true;
             }
+        }
+
+        private void showMilliseconds_CheckedChanged(object sender, EventArgs e)
+        {
+            decisecondsOnly.Enabled = showMilliseconds.Checked;
+            if (!showMilliseconds.Checked)
+            {
+                decisecondsOnly.Checked = false;
+            }
+        }
+
+        private void onlyDeciseconds_CheckedChanged(object sender, EventArgs e)
+        {
         }
     }
 }

@@ -2134,7 +2134,7 @@ namespace WSplitTimer
         // Detailed Update (Updates some stuff, not necessarely in the detailed window or detailed view.
         public void updateDetailed()
         {
-            // TODO: Add best possible time for Dune
+            // TODO: Best possible time does not count down, neither does time loss / gain
             ColorSettings colors = ColorSettings.Profile;
             // For every split, checks conditions set the time string, the color and the width of the split time
             for (int i = 0; i <= split.LastIndex; i++)
@@ -3883,11 +3883,11 @@ namespace WSplitTimer
                 {
                     clockTimeAbsSize = MeasureTimeStringMax("88:88:88", (Settings.Profile.DigitalClock) ? wsplit.digitLarge : wsplit.clockLarge, graphics);
                     if (span2.TotalHours >= 1.0)
-                        timeStringAbsPart = string.Format("{0:0}:{1:00}:{2:00}", Math.Floor(span2.TotalHours), span2.Minutes, span2.Seconds);
+                        timeStringAbsPart = $"{Math.Floor(span2.TotalHours):0}:{span2.Minutes:00}:{span2.Seconds:00}";
                     else if (span2.TotalMinutes >= 1.0)
-                        timeStringAbsPart = string.Format("{0}:{1:00}", span2.Minutes, span2.Seconds);
+                        timeStringAbsPart = $"{span2.Minutes}:{span2.Seconds:00}";
                     else
-                        timeStringAbsPart = string.Format("{0}", span2.Seconds);
+                        timeStringAbsPart = $"{span2.Seconds}";
                 }
 
                 if (Settings.Profile.DigitalClock)
@@ -3905,17 +3905,26 @@ namespace WSplitTimer
                 else if (((wsplit.split.StartDelay != 0) && (wsplit.timer.ElapsedTicks == 0L)) && ((span2.TotalHours < 10.0) || ((span2.TotalHours < 100.0) && (wsplit.stopwatch.Interval > 42))))
                     timeStringAbsPart = "-" + timeStringAbsPart;
 
-                // If the number of hours is greater or equal to 100 or the refresh interval is greater than 42, show only 1 digit after the decimal
-                // TODO: This is how it removes a decimal place. Should be good to have a setting do this
-                if ((span2.TotalHours >= 100.0) || (wsplit.stopwatch.Interval > 42))
-                {
-                    clockTimeDecSize = MeasureTimeStringMax("8", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
-                    timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(span2.Milliseconds / 100.0)));
-                }
-                else
+                if (Settings.Profile.ShowMilliseconds)
                 {
                     clockTimeDecSize = MeasureTimeStringMax("88", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
                     timeStringDecPart = string.Format("{0:00}", Math.Floor((double)(span2.Milliseconds / 10.0)));
+                }
+                else
+                {
+                    // TODO: Remove the extra space when no milliseconds are not displayed
+                    clockTimeDecSize = new SizeF(
+                        0, Settings.Profile.DigitalClock ? wsplit.digitMed.Height : wsplit.clockMed.Height);
+                    timeStringDecPart = string.Empty;
+                }
+
+                bool forceTenthsDisplay = span2.TotalHours >= 100.0 || wsplit.stopwatch.Interval > 42;
+                // If the number of hours is greater or equal to 100 or the refresh interval is greater than 42,
+                // show only 1 digit after the decimal
+                if (Settings.Profile.DecisecondsOnly || forceTenthsDisplay)
+                {
+                    clockTimeDecSize = MeasureTimeStringMax("8", (Settings.Profile.DigitalClock) ? wsplit.digitMed : wsplit.clockMed, graphics);
+                    timeStringDecPart = string.Format("{0:0}", Math.Floor((double)(span2.Milliseconds / 100.0)));
                 }
 
                 clockTimeTotalSize = new SizeF(clockTimeAbsSize.Width + clockTimeDecSize.Width,
@@ -4395,7 +4404,7 @@ namespace WSplitTimer
                             Brush brush4 = new SolidBrush(Color.FromArgb(86, clockGrColor2));
                             bgGraphics.DrawString("88:88:88".PadLeft(timeStringAbsPart.Length, '8'), wsplit.digitLarge, brush4, 0f, 0.15f);
 
-                            if (Settings.Profile.ShowDecimalSeparator)
+                            if (Settings.Profile.ShowDecimalSeparator && Settings.Profile.ShowMilliseconds)
                             {
                                 bgGraphics.DrawString(wsplit.decimalChar, wsplit.digitMed, brush4, (112 - clockTimeDecSize.Width), 4.5f);
                                 bgGraphics.DrawString("".PadRight(timeStringDecPart.Length, '8'), wsplit.digitMed, brush4, (119 - clockTimeDecSize.Width), 4.5f);
@@ -4436,7 +4445,7 @@ namespace WSplitTimer
                         brush = new SolidBrush(ColorSettings.Profile.Flash);
                     }
 
-                    if (Settings.Profile.ShowDecimalSeparator)
+                    if (Settings.Profile.ShowDecimalSeparator && Settings.Profile.ShowMilliseconds)
                     {
                         graphics.DrawString(wsplit.decimalChar, wsplit.digitMed, brush, clockTimeAbsSize.Width - 7, 4.5f);
                         graphics.DrawString(timeStringDecPart, wsplit.digitMed, brush, clockTimeAbsSize.Width, 4.5f);
@@ -4458,7 +4467,7 @@ namespace WSplitTimer
                     RectangleF clockTimeAbsRectF = new RectangleF(0f, 0f, clockTimeAbsSize.Width, clockTimeAbsSize.Height);
                     RectangleF clockTimeDecRectF;
 
-                    if (Settings.Profile.ShowDecimalSeparator)
+                    if (Settings.Profile.ShowDecimalSeparator && Settings.Profile.ShowMilliseconds)
                     {
                         clockTimeDecRectF = new RectangleF(clockTimeAbsRectF.Right - 7, clockTimeAbsRectF.Top + (largeBaseline - mediumBaseline), clockTimeDecSize.Width, clockTimeDecSize.Height);
 
